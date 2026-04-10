@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, ParseUUIDPipe, Post, Put } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserService } from './user.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
@@ -16,7 +16,7 @@ export class UserController {
     @ApiOperation({ summary: 'Create user' })
     @ApiResponse({ status: 201 })
     @ApiResponse({ status: 400, description: 'Validation error' })
-    @HttpCode(HttpStatus.CREATED)
+    @HttpCode(201)
     create(@Body() userDto: CreateUserDto){
         return this.userService.create(userDto);
     }
@@ -51,7 +51,7 @@ export class UserController {
     @ApiResponse({ status: 204, description: 'User deleted successfully' })
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'User not found' })
-    @HttpCode(HttpStatus.NO_CONTENT)
+    @HttpCode(204)
     remove(@Param('id', ParseUUIDPipe) id: string){
         return this.userService.remove(id);
     }
