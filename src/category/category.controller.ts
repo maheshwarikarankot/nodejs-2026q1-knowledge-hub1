@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -14,7 +14,7 @@ export class CategoryController {
     @ApiOperation({ summary: 'Create category' })
     @ApiResponse({ status: 201 })
     @ApiResponse({ status: 400, description: 'Validation error' })
-    @HttpCode(HttpStatus.CREATED)
+    @HttpCode(201)
     create(@Body() categoryDto: CreateCategoryDto): Category {
         return this.categoryService.create(categoryDto);
     }
@@ -52,7 +52,7 @@ export class CategoryController {
     @ApiResponse({ status: 204, description: 'Category deleted successfully' })
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Category not found' })
-    @HttpCode(HttpStatus.NO_CONTENT)
+    @HttpCode(204)
     remove(@Param('id', ParseUUIDPipe) id: string): void {
         this.categoryService.remove(id);
     }
