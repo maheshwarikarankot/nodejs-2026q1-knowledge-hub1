@@ -11,6 +11,10 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
+    "docker:build": "docker build -f dockerfile -t khub1_api:latest .",
+    "podman:build": "podman build --format docker -f dockerfile -t khub1_api:latest .",
+    "scan": "trivy image --exit-code 1 --severity HIGH,CRITICAL localhost/nodejs-2026q1-knowledge-hub1_app:latest",
+    "scan:json": "trivy image --format json localhost/nodejs-2026q1-knowledge-hub1_app:latest",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
