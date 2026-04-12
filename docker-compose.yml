@@ -1,0 +1,91 @@
+version: '3.9'
+
+services:
+  # Knowledge Hub API
+  app:
+    image: localhost/nodejs-2026q1-knowledge-hub1_app:latest
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: khub1_api
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-4000}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+    ports:
+      - "${PORT:-4000}:${PORT:-4000}"
+    networks:
+      - kb-network
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://localhost:' + (process.env.PORT || 4000) + '/', (r) => { if (r.statusCode >= 400) process.exit(1); }).on('error', () => process.exit(1));\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Build-only service to tag the builder stage image explicitly
+  builder:
+    image: localhost/nodejs-2026q1-knowledge-hub1_builder:latest
+    build:
+      context: .
+      dockerfile: dockerfile
+      target: builder
+    profiles: ["build"]
+
+  # PostgreSQL database exposed on localhost:5440
+  db:
+    image: postgres:16-alpine
+    container_name: khub1_postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5440:5432"
+    volumes:
+      - khub1api_db-data:/var/lib/postgresql/data
+    networks:
+      - kb-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Optional: Adminer for database debugging (development only)
+  adminer:
+    image: adminer:latest
+    container_name: kb-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - kb-network
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: ["debug"]
+
+networks:
+  kb-network:
+    driver: bridge
+
+volumes:
+  khub1api_db-data:
+    driver: local
+  
