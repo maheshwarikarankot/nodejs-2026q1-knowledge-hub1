@@ -260,12 +260,14 @@ The project Dockerfile (`dockerfile`) uses a multi-stage strategy:
 
 1. `builder` stage:
 - installs all dependencies
+- runs `prisma generate`
 - compiles TypeScript (`npm run build`)
+- prunes dev dependencies
 
 2. production stage:
 - starts from `node:24-alpine`
 - copies compiled `dist/` output
-- installs production dependencies only (`npm ci --omit=dev`)
+- copies production-ready `node_modules/` from builder stage
 - sets `NODE_ENV=production`
 - runs as a non-root user
 - exposes app port and starts API with `node dist/main.js`
@@ -309,6 +311,7 @@ Database-related variables are included in `.env.example`:
 - `POSTGRES_DB`
 - `POSTGRES_HOST` (default: `db`)
 - `POSTGRES_PORT` (default: `5432`)
+- `DATABASE_URL` / `DATABASE_URL_DOCKER` include `connection_limit` and `pool_timeout` for connection pooling
 
 Note: `.env` is ignored and must not be committed.
 
@@ -319,6 +322,8 @@ Build and start all required containers:
 ```bash
 docker-compose up --build
 ```
+
+If `docker-compose up --build -d` fails with `bind: address already in use`, free port `4000` first or set a different `PORT` in `.env`.
 
 Run with Adminer enabled:
 
@@ -342,12 +347,18 @@ Example command:
 trivy image <image-name>
 ```
 
+![alt text](<Image 4-12-26 at 2.14 AM.jpg>)
+
 Scan artifacts are present in this repository:
 
 - `trivy-report.json`
 - `trivy-report.sarif`
 - `trivy-scan-report.txt`
 - `trivy-summary.txt`
+
+Current app image size evidence (local):
+
+- `localhost/mahikarankot/khub1_api:latest` -> `242 MB` (below the `500 MB` target)
 
 ### Docker Hub image
 
