@@ -7,9 +7,10 @@ import { ArticleModule } from './article/article.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CommentModule } from './comment/comment.module';
 import { LoggingInterceptor } from './common/logging.interceptor';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [UserModule, CategoryModule, ArticleModule, CommentModule],
+  imports: [UserModule, CategoryModule, ArticleModule, CommentModule, PrismaModule],
   controllers: [AppController],
   providers: [AppService, { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }],
 })

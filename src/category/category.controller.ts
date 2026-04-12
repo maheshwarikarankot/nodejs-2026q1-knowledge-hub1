@@ -15,7 +15,7 @@ export class CategoryController {
     @ApiResponse({ status: 201 })
     @ApiResponse({ status: 400, description: 'Validation error' })
     @HttpCode(201)
-    create(@Body() categoryDto: CreateCategoryDto): Category {
+    async create(@Body() categoryDto: CreateCategoryDto): Promise<Category> {
         return this.categoryService.create(categoryDto);
     }
 
@@ -23,7 +23,7 @@ export class CategoryController {
     @ApiOperation({ summary: 'Get all categories' })
     @ApiOkResponse()
     @HttpCode(200)
-    findAll(){
+    async findAll() {
         return this.categoryService.findAll();
     }       
 
@@ -33,7 +33,7 @@ export class CategoryController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Category not found' })
     @HttpCode(200)
-    findOne(@Param('id',ParseUUIDPipe) id: string): Category {
+    async findOne(@Param('id',ParseUUIDPipe) id: string): Promise<Category> {
         return this.categoryService.findOne(id);
     }
 
@@ -43,7 +43,7 @@ export class CategoryController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Category not found' })
     @HttpCode(200)
-    update(@Param('id', ParseUUIDPipe) id: string, @Body() categoryDto: UpdateCategoryDto): Category {
+    async update(@Param('id', ParseUUIDPipe) id: string, @Body() categoryDto: UpdateCategoryDto): Promise<Category> {
         return this.categoryService.update(id, categoryDto);
     }   
 
@@ -53,7 +53,7 @@ export class CategoryController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Category not found' })
     @HttpCode(204)
-    remove(@Param('id', ParseUUIDPipe) id: string): void {
-        this.categoryService.remove(id);
+    async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+        await this.categoryService.remove(id);
     }
 }

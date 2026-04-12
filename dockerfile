@@ -3,8 +3,9 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and Prisma schema first so the client can be generated
 COPY package*.json ./
+COPY prisma ./prisma
 
 # Install all dependencies (including dev)
 RUN npm ci
@@ -12,8 +13,14 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Generate Prisma client from the checked-in schema
+RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=public" npx prisma generate
+
 # Compile TypeScript
 RUN npm run build
+
+# Keep only production dependencies for the runtime image
+RUN npm prune --omit=dev
 
 
 ###############################################
@@ -31,14 +38,13 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy compiled code from builder
+# Copy compiled code and production-ready dependencies from builder
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
 # Copy package files
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
-
-# Install production dependencies only
-RUN npm ci --omit=dev
 
 # Switch to non-root user
 USER nodejs

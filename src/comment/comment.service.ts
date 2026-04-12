@@ -1,20 +1,43 @@
-import { Inject, Injectable, NotFoundException, UnprocessableEntityException, forwardRef } from '@nestjs/common';
-import { paginate, sortItems } from '../common/pagination/pagination.function';
-import { randomUUID } from 'crypto';
+import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { PaginatedResponse } from '../common/pagination/pagination.interface';
-import { ArticleService } from '../article/article.service';
 import { Comment } from './entities/comment.entity';
+import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CommentService {
-    private readonly comments: Comment[] = [];
-    constructor(
-        @Inject(forwardRef(() => ArticleService))
-        private readonly articleService: ArticleService,
-    ) {}
+    constructor(private readonly prisma: PrismaService) {}
 
-    findAll(
+    private readonly sortableFields = new Set(['id', 'content', 'articleId', 'authorId', 'createdAt']);
+
+    private toEntity(comment: {
+        id: string;
+        content: string;
+        articleId: string;
+        authorId: string | null;
+        createdAt: Date;
+    }): Comment {
+        return {
+            id: comment.id,
+            content: comment.content,
+            articleId: comment.articleId,
+            authorId: comment.authorId,
+            createdAt: comment.createdAt.getTime(),
+        };
+    }
+
+    private buildOrderBy(sortBy?: string, order?: 'asc' | 'desc'): Prisma.CommentOrderByWithRelationInput | undefined {
+        if (!sortBy || !this.sortableFields.has(sortBy)) {
+            return undefined;
+        }
+
+        return {
+            [sortBy]: order ?? 'asc',
+        } as Prisma.CommentOrderByWithRelationInput;
+    }
+
+    async findAll(
       articleId: string,
         opts?: {
             page?  : number;
@@ -22,61 +45,66 @@ export class CommentService {
             sortBy?: string;
             order? : 'asc' | 'desc';
         }  
-    ): PaginatedResponse<Comment> {
-        const result = this.comments.filter(c => c.articleId === articleId);
-        const sorted = sortItems(result, opts?.sortBy, opts?.order);
-        return paginate(sorted, opts?.page, opts?.limit);
+    ): Promise<PaginatedResponse<Comment>> {
+        const page = opts?.page ?? 1;
+        const limit = opts?.limit ?? 10;
+
+        const [total, comments] = await this.prisma.$transaction([
+            this.prisma.comment.count({ where: { articleId } }),
+            this.prisma.comment.findMany({
+                where: { articleId },
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: this.buildOrderBy(opts?.sortBy, opts?.order),
+            }),
+        ]);
+
+        return {
+            data: comments.map((comment) => this.toEntity(comment)),
+            total,
+            page,
+            limit,
+        };
     }
 
-    create(dto: CreateCommentDto): Comment {
-        const now = Date.now();
+    async create(dto: CreateCommentDto): Promise<Comment> {
+        const articleExists = await this.prisma.article.findUnique({
+            where: { id: dto.articleId },
+            select: { id: true },
+        });
 
-        if (!this.articleService.articleExists(dto.articleId)) {
-        throw new UnprocessableEntityException(`Article with id ${dto.articleId} does not exist`);
+        if (!articleExists) {
+            throw new UnprocessableEntityException(`Article with id ${dto.articleId} does not exist`);
         }
 
-        const newComment: Comment = {
-            id: randomUUID(),
-            articleId: dto.articleId,
-            authorId: dto.authorId ?? null,
-            content: dto.content,       
-            createdAt: now,
-        };
-        this.comments.push(newComment);
-        return newComment;
+        const comment = await this.prisma.comment.create({
+            data: {
+                content: dto.content,
+                articleId: dto.articleId,
+                authorId: dto.authorId ?? null,
+            },
+        });
+
+        return this.toEntity(comment);
     }
 
-    findOne(id: string): Comment {
-        const comment = this.comments.find(c => c.id === id);
+    async findOne(id: string): Promise<Comment> {
+        const comment = await this.prisma.comment.findUnique({ where: { id } });
+
         if (!comment) {
             throw new NotFoundException(`Comment with id ${id} not found`);
         }
-        return comment;
+
+        return this.toEntity(comment);
     }
 
-    remove(id: string): void {
-        const idx = this.comments.findIndex(c => c.id === id);
-        if (idx === -1) {
+    async remove(id: string): Promise<void> {
+        const comment = await this.prisma.comment.findUnique({ where: { id } });
+
+        if (!comment) {
             throw new NotFoundException(`Comment with id ${id} not found`);
         }
-        this.comments.splice(idx, 1);
-    }
 
-    removeByArticle(articleId: string): void {
-        const indices = this.comments
-        .map((c, i) => c.articleId === articleId ? i : -1)
-        .filter(i => i !== -1)
-        .reverse();
-        indices.forEach(i => this.comments.splice(i, 1));
+        await this.prisma.comment.delete({ where: { id } });
     }
- 
-    removeByAuthor(authorId: string): void {
-        const indices = this.comments
-        .map((c, i) => c.authorId === authorId ? i : -1)
-        .filter(i => i !== -1)
-        .reverse();
-        indices.forEach(i => this.comments.splice(i, 1));
-    }
-        
-
 }

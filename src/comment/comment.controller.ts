@@ -15,7 +15,7 @@ export class CommentController {
     @ApiResponse({ status: 400, description: 'Validation error' })
     @ApiResponse({ status: 422, description: 'Article not found' })
     @HttpCode(HttpStatus.CREATED)
-    create(@Body() commentDto: CreateCommentDto) {
+    async create(@Body() commentDto: CreateCommentDto) {
         return this.commentService.create(commentDto);
     }
 
@@ -28,7 +28,7 @@ export class CommentController {
     @ApiQuery({ name: 'order',     required: false, enum: ['asc', 'desc'] })
     @ApiResponse({ status: 400, description: 'articleId is required' })
     @HttpCode(200)
-    findAll(
+    async findAll(
         @Query('articleId') articleId? : string,
         @Query('page') page? : number,
         @Query('limit') limit? : number,
@@ -38,13 +38,13 @@ export class CommentController {
         if (!articleId) {
             throw new BadRequestException('articleId query parameter is required');
         }
-        return this.commentService.findAll(
+          return (await this.commentService.findAll(
            articleId,{
            page: page ? Number(page) : undefined,
            limit: limit ? Number(limit) : undefined,
            sortBy,
            order,
-        }).data;
+          })).data;
     }   
 
     @Get(':id')
@@ -53,7 +53,7 @@ export class CommentController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Comment not found' })
     @HttpCode(200)
-    findOne(@Param('id', ParseUUIDPipe) id: string) {
+    async findOne(@Param('id', ParseUUIDPipe) id: string) {
         return this.commentService.findOne(id);
     }
 
@@ -63,7 +63,7 @@ export class CommentController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Comment not found' })
     @HttpCode(HttpStatus.NO_CONTENT)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    async remove(@Param('id', ParseUUIDPipe) id: string) {
         return this.commentService.remove(id);
     }
 }

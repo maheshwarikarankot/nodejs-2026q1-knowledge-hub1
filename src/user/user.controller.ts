@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserService } from './user.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
@@ -17,13 +17,13 @@ export class UserController {
     @ApiResponse({ status: 201 })
     @ApiResponse({ status: 400, description: 'Validation error' })
     @HttpCode(201)
-    create(@Body() userDto: CreateUserDto){
+    async create(@Body() userDto: CreateUserDto){
         return this.userService.create(userDto);
     }
 
     @Get()
     @HttpCode(200)
-    findAll(): User[] {
+    async findAll(): Promise<Array<Omit<User, 'password'>>> {
         return this.userService.findAll();
     }
 
@@ -32,7 +32,7 @@ export class UserController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'User not found' })
     @HttpCode(200)
-    findOne(@Param('id', ParseUUIDPipe) id: string){
+    async findOne(@Param('id', ParseUUIDPipe) id: string){
         return this.userService.findOne(id);
     }
 
@@ -42,7 +42,7 @@ export class UserController {
     @ApiResponse({ status: 403, description: 'Wrong old password' })
     @ApiResponse({ status: 404, description: 'User not found' })
     @HttpCode(200)
-    updatePassword(@Param('id', ParseUUIDPipe) id: string, @Body() updatePasswordDto: UpdatePasswordDto){
+    async updatePassword(@Param('id', ParseUUIDPipe) id: string, @Body() updatePasswordDto: UpdatePasswordDto){
         return this.userService.updatePassword(id, updatePasswordDto);
     }
 
@@ -52,7 +52,7 @@ export class UserController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'User not found' })
     @HttpCode(204)
-    remove(@Param('id', ParseUUIDPipe) id: string){
+    async remove(@Param('id', ParseUUIDPipe) id: string){
         return this.userService.remove(id);
     }
 }

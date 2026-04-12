@@ -16,7 +16,7 @@ export class ArticleController {
     @ApiResponse({ status: 201 })
     @ApiResponse({ status: 400, description: 'Validation error' })
     @HttpCode(HttpStatus.CREATED)
-    create(@Body() articleDto: CreateArticleDto) {
+    async create(@Body() articleDto: CreateArticleDto) {
         return this.articleService.create(articleDto);
     }   
 
@@ -30,7 +30,7 @@ export class ArticleController {
     @ApiQuery({ name: 'sortBy',     required: false, example: 'createdAt' })
     @ApiQuery({ name: 'order',      required: false, enum: ['asc', 'desc'] })
     @HttpCode(200)
-    findAll(
+    async findAll(
         @Query('status') status? : ArticleStatus,
         @Query('categoryId') categoryId? : string,
         @Query('tag') tag? : string,
@@ -39,7 +39,7 @@ export class ArticleController {
         @Query('sortBy') sortBy? : string,
         @Query('order') order? : 'asc' | 'desc',
     ){
-        return this.articleService.findAll({
+        return (await this.articleService.findAll({
             status,
             categoryId,
             tag,
@@ -47,7 +47,7 @@ export class ArticleController {
             limit : limit ? Number(limit) : undefined,
             sortBy,
             order,
-    }).data;
+            })).data;
     }
 
     @Get(':id')
@@ -56,7 +56,7 @@ export class ArticleController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Article not found' })
     @HttpCode(200)
-    findOne(@Param('id', ParseUUIDPipe) id: string): Article {
+    async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Article> {
         return this.articleService.findOne(id);
     }
 
@@ -66,7 +66,7 @@ export class ArticleController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Article not found' })
     @HttpCode(200)
-    update(@Param('id', ParseUUIDPipe) id: string, @Body() articleDto: UpdateArticleDto): Article {
+    async update(@Param('id', ParseUUIDPipe) id: string, @Body() articleDto: UpdateArticleDto): Promise<Article> {
         return this.articleService.update(id, articleDto);
     }
 
@@ -76,7 +76,7 @@ export class ArticleController {
     @ApiResponse({ status: 400, description: 'Invalid uuid' })
     @ApiResponse({ status: 404, description: 'Article not found' })
     @HttpCode(HttpStatus.NO_CONTENT)
-    remove(@Param('id', ParseUUIDPipe) id: string) {
+    async remove(@Param('id', ParseUUIDPipe) id: string) {
         return this.articleService.remove(id);
     }       
 }

@@ -2,76 +2,92 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { User } from './entities/user.entity';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { randomUUID } from 'crypto';
 import { UserRole } from '../common/enums';
-import { ArticleService } from '../article/article.service';
-import { CommentService } from '../comment/comment.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { Role as PrismaRole } from '@prisma/client';
 
 @Injectable()
 export class UserService {
-    private readonly users: User[] = [];
+    constructor(private readonly prisma: PrismaService) {}
 
-    private sanitize(user: User): Omit<User, 'password'> {
-    const { password, ...rest } = user;
-    return rest;
-  }
-
-    constructor(
-        private readonly articleService: ArticleService,
-        private readonly commentService: CommentService,
-    ) {}
-
-    findAll(): User[] {
-        return this.users;
+    private toPrismaRole(role: UserRole): PrismaRole {
+        return role.toUpperCase() as PrismaRole;
     }
 
-    findOne(id: string): Omit<User, 'password'> {
-        const user = this.users.find(u => u.id === id);
+    private fromPrismaRole(role: PrismaRole): UserRole {
+        return role.toLowerCase() as UserRole;
+    }
+
+    private sanitize(user: {
+        id: string;
+        login: string;
+        role: PrismaRole;
+        createdAt: Date;
+        updatedAt: Date;
+    }): Omit<User, 'password'> {
+        return {
+            id: user.id,
+            login: user.login,
+            role: this.fromPrismaRole(user.role),
+            createdAt: user.createdAt.getTime(),
+            updatedAt: user.updatedAt.getTime(),
+        };
+    }
+
+    async findAll(): Promise<Array<Omit<User, 'password'>>> {
+        const users = await this.prisma.user.findMany();
+        return users.map((user) => this.sanitize(user));
+    }
+
+    async findOne(id: string): Promise<Omit<User, 'password'>> {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
         if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`); // Throw 404 if user not found
+            throw new NotFoundException(`User with id ${id} not found`);
         }
         return this.sanitize(user);
     }
 
-    create(dto: CreateUserDto): Omit<User, 'password'> {
-        const now = Date.now();
-        const newuser: User = {
-            id: randomUUID(),
-            login: dto.login,
-            password: dto.password,
-            role: dto.role ?? UserRole.VIEWER,
-            createdAt: now,
-            updatedAt: now
-        };
-        this.users.push(newuser);
-        return this.sanitize(newuser);
+    async create(dto: CreateUserDto): Promise<Omit<User, 'password'>> {
+        const user = await this.prisma.user.create({
+            data: {
+                login: dto.login,
+                password: dto.password,
+                role: this.toPrismaRole(dto.role ?? UserRole.VIEWER),
+            },
+        });
+
+        return this.sanitize(user);
     }
 
-    updatePassword(id: string, dto: UpdatePasswordDto): Omit<User, 'password'> {
-        const user = this.users.find(u => u.id === id);
+    async updatePassword(id: string, dto: UpdatePasswordDto): Promise<Omit<User, 'password'>> {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
         if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`); // Throw 404 if user not found
+            throw new NotFoundException(`User with id ${id} not found`);
         }
         if(user.password !== dto.oldPassword){
-            throw new ForbiddenException(`Old password does not match`); // Throw 400 if old password is incorrect
-        }
-        user.password = dto.newPassword;
-        user.updatedAt = Date.now();
-        return this.sanitize(user);
-    }
-
-    remove(id: string): void {
-        const index = this.users.findIndex(u => u.id === id);
-        if (index === -1) {
-            throw new NotFoundException(`User with id ${id} not found`); // Throw 404 if user not found
+            throw new ForbiddenException(`Old password does not match`);
         }
 
-        this.articleService.nullifyAuthor(id);
-        this.commentService.removeByAuthor(id);
+        const updatedUser = await this.prisma.user.update({
+            where: { id },
+            data: {
+                password: dto.newPassword,
+            },
+        });
 
-        this.users.splice(index, 1);
+        return this.sanitize(updatedUser);
     }
-    
-    nullifyAuthor(userId: string): void {}
+
+    async remove(id: string): Promise<void> {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
+        if (!user) {
+            throw new NotFoundException(`User with id ${id} not found`);
+        }
+
+        await this.prisma.user.delete({ where: { id } });
+    }
 
 }

@@ -154,7 +154,17 @@ curl -X POST http://localhost:<PORT>/comment \
 
 ## Data Storage Note
 
-The current implementation uses in-memory arrays in services. Data resets when the process restarts.
+The current implementation uses Prisma with PostgreSQL. Data is persisted in the configured database instead of in-memory service arrays.
+
+## Prisma Hints
+
+Helpful commands and patterns for working on this project:
+
+- Run `npx prisma generate` after Prisma schema changes so the client types stay in sync.
+- Use `npx prisma studio` to inspect and edit database records during development.
+- Use `npx prisma migrate reset` when you need to reset the database, re-apply migrations, and run the seed again.
+- Prefer `include` and `select` in Prisma queries to avoid over-fetching related data.
+- Use `prisma.$transaction` for multi-step write operations that must succeed or fail together.
 
 ## Testing
 
