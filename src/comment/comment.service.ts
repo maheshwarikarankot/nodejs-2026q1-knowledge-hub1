@@ -107,4 +107,13 @@ export class CommentService {
 
         await this.prisma.comment.delete({ where: { id } });
     }
+
+    async findAuthorId(id: string): Promise<string | null | undefined> {
+        const comment = await this.prisma.comment.findUnique({
+            where: { id },
+            select: { authorId: true },
+        });
+
+        return comment?.authorId;
+    }
 }

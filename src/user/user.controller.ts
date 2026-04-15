@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserService } from './user.service';
-import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { ApiTags, ApiResponse, ApiQuery, ApiOperation } from '@nestjs/swagger';
 
@@ -42,8 +42,8 @@ export class UserController {
     @ApiResponse({ status: 403, description: 'Wrong old password' })
     @ApiResponse({ status: 404, description: 'User not found' })
     @HttpCode(200)
-    async updatePassword(@Param('id', ParseUUIDPipe) id: string, @Body() updatePasswordDto: UpdatePasswordDto){
-        return this.userService.updatePassword(id, updatePasswordDto);
+    async updatePassword(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto){
+        return this.userService.updateUser(id, updateUserDto);
     }
 
     @Delete(':id')

@@ -215,4 +215,13 @@ export class ArticleService {
 
         return article !== null;
     }
+
+    async findAuthorId(id: string): Promise<string | null | undefined> {
+        const article = await this.prisma.article.findUnique({
+            where: { id },
+            select: { authorId: true },
+        });
+
+        return article?.authorId;
+    }
 }
