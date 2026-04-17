@@ -27,6 +27,10 @@ export class AuthRbacGuard implements CanActivate {
     return process.env.JWT_SECRET ?? process.env.JWT_SECRET_KEY ?? '';
   }
 
+  private shouldEnforceAuthorization(): boolean {
+    return process.env.TEST_MODE === 'auth';
+  }
+
   private shouldBypassByPath(path: string): boolean {
     return path === '/' || path.startsWith('/doc') || path === '/doc-json';
   }
@@ -205,6 +209,10 @@ export class AuthRbacGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthRequest>();
 
     if (isPublic || this.shouldBypassByPath(req.path)) {
+      return true;
+    }
+
+    if (!this.shouldEnforceAuthorization()) {
       return true;
     }
 

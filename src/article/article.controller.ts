@@ -4,7 +4,7 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { ArticleStatus } from '../common/enums';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { Article } from './entities/article.entity';
+import { Article } from './entities/article.interface';
 
 @ApiTags('Articles')
 @Controller('article')

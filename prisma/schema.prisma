@@ -78,4 +78,6 @@ model Tag {
   name     String    @unique
 
   articles Article[]
+
+  @@index([name])
 }

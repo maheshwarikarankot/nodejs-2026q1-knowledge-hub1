@@ -1,163 +1,43 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { User } from './entities/user.entity';
+import { Injectable } from '@nestjs/common';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserRole } from '../common/enums';
-import { PrismaService } from '../prisma/prisma.service';
-import { Role as PrismaRole } from '@prisma/client';
-import { UpdateUserDto } from './dto/update-user.dto';
-import * as bcrypt from 'bcryptjs';
+import { UserRepository } from './user.repository';
+import { UserEntity } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly userRepository: UserRepository) {}
 
-    private getSaltRounds(): number {
-        const parsed = Number(process.env.CRYPT_SALT ?? 10);
-        return Number.isNaN(parsed) ? 10 : parsed;
+    async findAll(): Promise<Array<Omit<UserEntity, 'password'>>> {
+        return this.userRepository.findAll();
     }
 
-    private toPrismaRole(role: UserRole): PrismaRole {
-        return role.toUpperCase() as PrismaRole;
+    async findOne(id: string): Promise<Omit<UserEntity, 'password'>> {
+        return this.userRepository.findOne(id);
     }
 
-    private fromPrismaRole(role: PrismaRole): UserRole {
-        return role.toLowerCase() as UserRole;
-    }
-
-    private sanitize(user: {
-        id: string;
-        login: string;
-        role: PrismaRole;
-        createdAt: Date;
-        updatedAt: Date;
-    }): Omit<User, 'password'> {
-        return {
-            id: user.id,
-            login: user.login,
-            role: this.fromPrismaRole(user.role),
-            createdAt: user.createdAt.getTime(),
-            updatedAt: user.updatedAt.getTime(),
-        };
-    }
-
-    async findAll(): Promise<Array<Omit<User, 'password'>>> {
-        const users = await this.prisma.user.findMany();
-        return users.map((user) => this.sanitize(user));
-    }
-
-    async findOne(id: string): Promise<Omit<User, 'password'>> {
-        const user = await this.prisma.user.findUnique({ where: { id } });
-
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-        return this.sanitize(user);
-    }
-
-    async create(dto: CreateUserDto): Promise<Omit<User, 'password'>> {
-        const existingUser = await this.prisma.user.findFirst({
-            where: { login: dto.login },
-        });
-
-        if (existingUser) {
-            throw new BadRequestException('Login is already taken');
-        }
-
-        const passwordHash = await bcrypt.hash(dto.password, this.getSaltRounds());
-
-        const user = await this.prisma.user.create({
-            data: {
-                login: dto.login,
-                password: passwordHash,
-                role: this.toPrismaRole(dto.role ?? UserRole.VIEWER),
-            },
-        });
-
-        return this.sanitize(user);
-    }
-
-    async updateUser(id: string, dto: UpdateUserDto): Promise<Omit<User, 'password'>> {
-        if (!dto.role && !dto.oldPassword && !dto.newPassword) {
-            throw new BadRequestException('At least one field to update is required');
-        }
-
-        if ((dto.oldPassword && !dto.newPassword) || (!dto.oldPassword && dto.newPassword)) {
-            throw new BadRequestException('Both oldPassword and newPassword must be provided together');
-        }
-
-        const user = await this.prisma.user.findUnique({ where: { id } });
-
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-
-        if (dto.oldPassword && dto.newPassword) {
-            const passwordMatches = await bcrypt.compare(dto.oldPassword, user.password);
-            if (!passwordMatches) {
-                throw new ForbiddenException('Old password does not match');
-            }
-        }
-
-        const data: {
-            password?: string;
-            role?: PrismaRole;
-        } = {};
-
-        if (dto.newPassword) {
-            data.password = await bcrypt.hash(dto.newPassword, this.getSaltRounds());
-        }
-
-        if (dto.role) {
-            data.role = this.toPrismaRole(dto.role);
-        }
-
-        const updatedUser = await this.prisma.user.update({
-            where: { id },
-            data,
-        });
-
-        return this.sanitize(updatedUser);
+    async create(dto: CreateUserDto): Promise<Omit<UserEntity, 'password'>> {
+        return this.userRepository.create(dto);
     }
 
     async findByLoginWithPassword(login: string): Promise<{ id: string; login: string; password: string; role: UserRole } | null> {
-        const user = await this.prisma.user.findFirst({
-            where: { login },
-            select: {
-                id: true,
-                login: true,
-                password: true,
-                role: true,
-            },
+        return this.userRepository.findByLoginWithPassword(login);
+    }
+
+    async updatePassword(id: string, dto: UpdatePasswordDto): Promise<Omit<UserEntity, 'password'>> {
+        return this.userRepository.updateUser(id, {
+            oldPassword: dto.oldPassword,
+            newPassword: dto.newPassword,
         });
-
-        if (!user) {
-            return null;
-        }
-
-        return {
-            id: user.id,
-            login: user.login,
-            password: user.password,
-            role: this.fromPrismaRole(user.role),
-        };
     }
 
     async remove(id: string): Promise<void> {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+        await this.userRepository.remove(id);
+    }
 
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-
-        await this.prisma.$transaction([
-            // Keep behavior explicit for assignment requirement and readability.
-            this.prisma.article.updateMany({
-                where: { authorId: id },
-                data: { authorId: null },
-            }),
-            this.prisma.comment.deleteMany({ where: { authorId: id } }),
-            this.prisma.user.delete({ where: { id } }),
-        ]);
+    nullifyAuthor(userId: string): void {
+        void userId;
     }
 
 }
