@@ -1,9 +1,9 @@
 {
   "moduleFileExtensions": ["ts", "js"],
   "rootDir": "test",
-  "setupFiles": ["<rootDir>/jest.setup.ts"],
   "testEnvironment": "node",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "setupFiles": ["<rootDir>/../jest.env.setup.ts"]
 }
