@@ -19,9 +19,6 @@ RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=
 # Compile TypeScript
 RUN npm run build
 
-# Keep only production dependencies for the runtime image
-RUN npm prune --omit=dev
-
 
 ###############################################
 
@@ -34,17 +31,24 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
+# Copy package metadata and Prisma schema for production install
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+
+# Install production dependencies only
+RUN npm ci --omit=dev
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy compiled code and production-ready dependencies from builder
+# Copy compiled code and generated Prisma artifacts from builder
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy package files
-COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+# Keep package.json start:prod (node dist/main) working with Nest output at dist/src/main.js
+RUN ln -sf ./src/main.js ./dist/main.js
 
 # Switch to non-root user
 USER nodejs
@@ -54,7 +58,7 @@ EXPOSE 4000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+CMD node -e "require('http').get('http://localhost:4000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Start application
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start:prod"]
