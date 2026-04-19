@@ -323,6 +323,26 @@ Build and start all required containers:
 docker-compose up --build
 ```
 
+Evaluator note (profile-based init job behavior):
+
+- Production-like run (skip automatic seeding):
+
+```bash
+podman-compose up --build
+```
+
+- Development run (run one-shot `migrate-seed` job before app):
+
+```bash
+podman-compose --profile dev up --build
+```
+
+- CI run (run one-shot `migrate-seed` job before app):
+
+```bash
+podman-compose --profile ci up --build
+```
+
 If `docker-compose up --build -d` fails with `bind: address already in use`, free port `4000` first or set a different `PORT` in `.env`.
 
 Run with Adminer enabled:
@@ -346,8 +366,6 @@ Example command:
 ```bash
 trivy image <image-name>
 ```
-
-![alt text](<Image 4-12-26 at 2.14 AM.jpg>)
 
 Scan artifacts are present in this repository:
 
