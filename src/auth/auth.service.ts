@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserService } from 'src/user/user.service';
+import { AuthRepository } from './auth.repository';
 import { AuthEntity } from './entities/auth.entity';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
@@ -11,7 +11,7 @@ import { UserRole } from '../common/enums';
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly userService: UserService,
+        private readonly authRepository: AuthRepository,
         private readonly jwtService: JwtService,
     ) {}
 
@@ -31,6 +31,7 @@ export class AuthService {
         return process.env.JWT_REFRESH_TTL ?? process.env.TOKEN_REFRESH_EXPIRE_TIME ?? '7d';
     }
 
+
     private async issueTokenPair(payload: JwtPayload): Promise<{ accessToken: string; refreshToken: string }> {
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
@@ -48,11 +49,11 @@ export class AuthService {
 
     async signUpUser(signUpUserDto: { login: string; password: string }): Promise<AuthEntity> {
         const { login, password } = signUpUserDto;
-        return this.userService.create({ login, password });
+        return this.authRepository.createUser({ login, password });
     }
 
     async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
-        const user = await this.userService.findByLoginWithPassword(dto.login);
+        const user = await this.authRepository.findByLogin(dto.login);
         if (!user) {
             throw new ForbiddenException('Authentication failed');
         }

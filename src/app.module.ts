@@ -11,7 +11,8 @@ import { LoggingInterceptor } from './common/logging.interceptor';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthRbacGuard } from './auth/guards/auth-rbac.guard';
+import { AuthGuard } from './auth/guards/auth.guard';
+import { RbacGuard } from './auth/guards/rbac.guard';
 
 @Module({
   imports: [UserModule, CategoryModule, ArticleModule, CommentModule, PrismaModule, AuthModule, JwtModule.register({})],
@@ -19,7 +20,8 @@ import { AuthRbacGuard } from './auth/guards/auth-rbac.guard';
   providers: [
     AppService,
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
-    { provide: APP_GUARD, useClass: AuthRbacGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RbacGuard },
   ],
 })
 export class AppModule {}

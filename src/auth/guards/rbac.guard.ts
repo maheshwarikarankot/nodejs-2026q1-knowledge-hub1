@@ -20,10 +20,6 @@ export class RbacGuard implements CanActivate {
     private readonly commentService: CommentService,
   ) {}
 
-  private shouldEnforceAuthorization(): boolean {
-    return process.env.TEST_MODE !== 'none';
-  }
-
   private shouldBypassByPath(path: string): boolean {
     return path === '/' || path.startsWith('/doc') || path === '/doc-json';
   }
@@ -190,7 +186,7 @@ export class RbacGuard implements CanActivate {
       return true;
     }
 
-    if (!this.shouldEnforceAuthorization() || !req.user) {
+    if (!req.user) {
       return true;
     }
 
