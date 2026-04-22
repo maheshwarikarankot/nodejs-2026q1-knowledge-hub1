@@ -3,8 +3,8 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { ArticleStatus } from '../common/enums';
 import { PaginatedResponse } from '../common/pagination/pagination.interface';
+import { ArticleEntity } from './entities/article.entity';
 import { ArticleRepository } from './article.repository';
-import { Article } from './entities/article.interface';
 
 @Injectable()
 export class ArticleService {
@@ -18,19 +18,19 @@ export class ArticleService {
     limit?: number;
     sortBy?: string;
     order?: 'asc' | 'desc';
-  }): Promise<PaginatedResponse<Article>> {
+  }): Promise<PaginatedResponse<ArticleEntity>> {
     return this.articleRepository.findAll(filters);
   }
 
-  findOne(id: string): Promise<Article> {
+  findOne(id: string): Promise<ArticleEntity> {
     return this.articleRepository.findOne(id);
   }
 
-  create(dto: CreateArticleDto): Promise<Article> {
+  create(dto: CreateArticleDto): Promise<ArticleEntity> {
     return this.articleRepository.create(dto);
   }
 
-  update(id: string, dto: UpdateArticleDto): Promise<Article> {
+  update(id: string, dto: UpdateArticleDto): Promise<ArticleEntity> {
     return this.articleRepository.update(id, dto);
   }
 

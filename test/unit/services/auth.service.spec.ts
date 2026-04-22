@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcryptjs';
 import { AuthService } from '../../../src/auth/auth.service';
-import { AuthRepository } from '../../../src/auth/auth.repository';
 import { UserRole } from '../../../src/common/enums';
+import { UserRepository } from '../../../src/user/user.repository';
+import { TokenRepository } from '../../../src/auth/token.repository';
 
 vi.mock('bcryptjs', () => ({
   compare: vi.fn(),
@@ -14,14 +14,14 @@ vi.mock('bcryptjs', () => ({
 describe('AuthService', () => {
   let service: AuthService;
 
-  const authRepositoryMock = {
-    createUser: vi.fn(),
-    findByLogin: vi.fn(),
+  const userRepositoryMock = {
+    create: vi.fn(),
+    findByLoginWithPassword: vi.fn(),
   };
 
-  const jwtServiceMock = {
-    signAsync: vi.fn(),
-    verifyAsync: vi.fn(),
+  const tokenRepositoryMock = {
+    generateTokenPair: vi.fn(),
+    verifyRefreshToken: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -36,12 +36,12 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
-          provide: AuthRepository,
-          useValue: authRepositoryMock,
+          provide: UserRepository,
+          useValue: userRepositoryMock,
         },
         {
-          provide: JwtService,
-          useValue: jwtServiceMock,
+          provide: TokenRepository,
+          useValue: tokenRepositoryMock,
         },
       ],
     }).compile();
@@ -53,16 +53,16 @@ describe('AuthService', () => {
     const dto = { login: 'peter', password: 'Pass123!' };
     const created = { id: 'u1', login: dto.login, role: UserRole.VIEWER };
 
-    authRepositoryMock.createUser.mockResolvedValueOnce(created);
+    userRepositoryMock.create.mockResolvedValueOnce(created);
 
     const result = await service.signUpUser(dto);
 
     expect(result).toEqual(created);
-    expect(authRepositoryMock.createUser).toHaveBeenCalledWith(dto);
+    expect(userRepositoryMock.create).toHaveBeenCalledWith(dto);
   });
 
   it('login throws ForbiddenException when user does not exist', async () => {
-    authRepositoryMock.findByLogin.mockResolvedValueOnce(null);
+    userRepositoryMock.findByLoginWithPassword.mockResolvedValueOnce(null);
 
     await expect(service.login({ login: 'egfry', password: 'pwd' })).rejects.toBeInstanceOf(
       ForbiddenException,
@@ -70,7 +70,7 @@ describe('AuthService', () => {
   });
 
   it('login throws ForbiddenException when password is invalid', async () => {
-    authRepositoryMock.findByLogin.mockResolvedValueOnce({
+    userRepositoryMock.findByLoginWithPassword.mockResolvedValueOnce({
       id: 'u1',
       login: 'john',
       password: 'secret123',
@@ -85,7 +85,7 @@ describe('AuthService', () => {
   });
 
   it('login returns access and refresh tokens for valid credentials', async () => {
-    authRepositoryMock.findByLogin.mockResolvedValueOnce({
+    userRepositoryMock.findByLoginWithPassword.mockResolvedValueOnce({
       id: 'u1',
       login: 'john',
       password: 'secret123',
@@ -93,9 +93,10 @@ describe('AuthService', () => {
     });
 
     vi.mocked(compare).mockResolvedValueOnce(true as never);
-    jwtServiceMock.signAsync
-      .mockResolvedValueOnce('access-token')
-      .mockResolvedValueOnce('refresh-token');
+    tokenRepositoryMock.generateTokenPair.mockResolvedValueOnce({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
 
     const result = await service.login({ login: 'john', password: 'correct' });
 
@@ -104,15 +105,8 @@ describe('AuthService', () => {
       refreshToken: 'refresh-token',
     });
 
-    expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
-      1,
+    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith(
       { userId: 'u1', login: 'john', role: UserRole.EDITOR },
-      { secret: 'access-secret', expiresIn: '15m' },
-    );
-    expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
-      2,
-      { userId: 'u1', login: 'john', role: UserRole.EDITOR },
-      { secret: 'refresh-secret', expiresIn: '7d' },
     );
   });
 
@@ -126,7 +120,7 @@ describe('AuthService', () => {
     process.env.TOKEN_EXPIRE_TIME = '30m';
     process.env.TOKEN_REFRESH_EXPIRE_TIME = '10d';
 
-    authRepositoryMock.findByLogin.mockResolvedValueOnce({
+    userRepositoryMock.findByLoginWithPassword.mockResolvedValueOnce({
       id: 'u-alt',
       login: 'john-alt',
       password: 'stored-hash',
@@ -134,9 +128,10 @@ describe('AuthService', () => {
     });
 
     vi.mocked(compare).mockResolvedValueOnce(true as never);
-    jwtServiceMock.signAsync
-      .mockResolvedValueOnce('alt-access-token')
-      .mockResolvedValueOnce('alt-refresh-token');
+    tokenRepositoryMock.generateTokenPair.mockResolvedValueOnce({
+      accessToken: 'alt-access-token',
+      refreshToken: 'alt-refresh-token',
+    });
 
     const result = await service.login({ login: 'john-alt', password: 'correct' });
 
@@ -144,15 +139,8 @@ describe('AuthService', () => {
       accessToken: 'alt-access-token',
       refreshToken: 'alt-refresh-token',
     });
-    expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
-      1,
+    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith(
       { userId: 'u-alt', login: 'john-alt', role: UserRole.ADMIN },
-      { secret: 'alt-access-secret', expiresIn: '30m' },
-    );
-    expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
-      2,
-      { userId: 'u-alt', login: 'john-alt', role: UserRole.ADMIN },
-      { secret: 'alt-refresh-secret', expiresIn: '10d' },
     );
   });
 
@@ -166,7 +154,7 @@ describe('AuthService', () => {
     delete process.env.JWT_REFRESH_TTL;
     delete process.env.TOKEN_REFRESH_EXPIRE_TIME;
 
-    authRepositoryMock.findByLogin.mockResolvedValueOnce({
+    userRepositoryMock.findByLoginWithPassword.mockResolvedValueOnce({
       id: 'u-default',
       login: 'john-default',
       password: 'stored-hash',
@@ -174,21 +162,15 @@ describe('AuthService', () => {
     });
 
     vi.mocked(compare).mockResolvedValueOnce(true as never);
-    jwtServiceMock.signAsync
-      .mockResolvedValueOnce('default-access')
-      .mockResolvedValueOnce('default-refresh');
+    tokenRepositoryMock.generateTokenPair.mockResolvedValueOnce({
+      accessToken: 'default-access',
+      refreshToken: 'default-refresh',
+    });
 
     await service.login({ login: 'john-default', password: 'correct' });
 
-    expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
-      1,
+    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith(
       { userId: 'u-default', login: 'john-default', role: UserRole.VIEWER },
-      { secret: '', expiresIn: '15m' },
-    );
-    expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
-      2,
-      { userId: 'u-default', login: 'john-default', role: UserRole.VIEWER },
-      { secret: '', expiresIn: '7d' },
     );
   });
 
@@ -197,7 +179,7 @@ describe('AuthService', () => {
   });
 
   it('refresh throws ForbiddenException for invalid/expired token', async () => {
-    jwtServiceMock.verifyAsync.mockRejectedValueOnce(new Error('expired'));
+    tokenRepositoryMock.verifyRefreshToken.mockRejectedValueOnce(new Error('expired'));
 
     await expect(service.refresh({ refreshToken: 'bad-token' })).rejects.toBeInstanceOf(
       ForbiddenException,
@@ -205,21 +187,20 @@ describe('AuthService', () => {
   });
 
   it('refresh verifies token and rotates token pair', async () => {
-    jwtServiceMock.verifyAsync.mockResolvedValueOnce({
+    tokenRepositoryMock.verifyRefreshToken.mockResolvedValueOnce({
       userId: 'u1',
       login: 'john',
       role: UserRole.ADMIN,
     });
 
-    jwtServiceMock.signAsync
-      .mockResolvedValueOnce('new-access')
-      .mockResolvedValueOnce('new-refresh');
+    tokenRepositoryMock.generateTokenPair.mockResolvedValueOnce({
+      accessToken: 'new-access',
+      refreshToken: 'new-refresh',
+    });
 
     const result = await service.refresh({ refreshToken: 'valid-refresh' });
 
-    expect(jwtServiceMock.verifyAsync).toHaveBeenCalledWith('valid-refresh', {
-      secret: 'refresh-secret',
-    });
+    expect(tokenRepositoryMock.verifyRefreshToken).toHaveBeenCalledWith('valid-refresh');
     expect(result).toEqual({
       accessToken: 'new-access',
       refreshToken: 'new-refresh',

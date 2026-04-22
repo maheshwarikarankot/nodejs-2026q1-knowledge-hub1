@@ -1,59 +1,39 @@
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthRepository } from './auth.repository';
 import { AuthEntity } from './entities/auth.entity';
 import * as bcrypt from 'bcryptjs';
-import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UserRole } from '../common/enums';
+import { UserRepository } from '../user/user.repository';
+import { UserEntity } from '../user/entities/user.entity';
+import { TokenRepository } from './token.repository';
 
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly authRepository: AuthRepository,
-        private readonly jwtService: JwtService,
+        private readonly userRepo: UserRepository,
+        private readonly tokenRepository: TokenRepository,
     ) {}
-
-    private getAccessSecret(): string {
-        return process.env.JWT_SECRET ?? process.env.JWT_SECRET_KEY ?? '';
-    }
-
-    private getRefreshSecret(): string {
-        return process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET_REFRESH_KEY ?? '';
-    }
-
-    private getAccessTtl(): string {
-        return process.env.JWT_ACCESS_TTL ?? process.env.TOKEN_EXPIRE_TIME ?? '15m';
-    }
-
-    private getRefreshTtl(): string {
-        return process.env.JWT_REFRESH_TTL ?? process.env.TOKEN_REFRESH_EXPIRE_TIME ?? '7d';
-    }
-
-
-    private async issueTokenPair(payload: JwtPayload): Promise<{ accessToken: string; refreshToken: string }> {
-        const [accessToken, refreshToken] = await Promise.all([
-            this.jwtService.signAsync(payload, {
-                secret: this.getAccessSecret(),
-                expiresIn: this.getAccessTtl(),
-            }),
-            this.jwtService.signAsync(payload, {
-                secret: this.getRefreshSecret(),
-                expiresIn: this.getRefreshTtl(),
-            }),
-        ]);
-
-        return { accessToken, refreshToken };
-    }
 
     async signUpUser(signUpUserDto: { login: string; password: string }): Promise<AuthEntity> {
         const { login, password } = signUpUserDto;
-        return this.authRepository.createUser({ login, password });
+        const userDto = { login, password };
+        const createdUser = await this.userRepo.create(userDto);
+        const userEntity = new UserEntity({
+            id: createdUser.id,
+            login: createdUser.login,
+            role: createdUser.role,
+        });
+        
+        return {
+            id: userEntity.id,
+            login: userEntity.login,
+            role: userEntity.role,
+        };
     }
 
     async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
-        const user = await this.authRepository.findByLogin(dto.login);
+        const user = await this.userRepo.findByLoginWithPassword(dto.login);
         if (!user) {
             throw new ForbiddenException('Authentication failed');
         }
@@ -63,7 +43,7 @@ export class AuthService {
             throw new ForbiddenException('Authentication failed');
         }
 
-        return this.issueTokenPair({
+        return this.tokenRepository.generateTokenPair({
             userId: user.id,
             login: user.login,
             role: user.role as UserRole,
@@ -76,11 +56,9 @@ export class AuthService {
         }
 
         try {
-            const payload = await this.jwtService.verifyAsync<JwtPayload>(dto.refreshToken, {
-                secret: this.getRefreshSecret(),
-            });
+            const payload = await this.tokenRepository.verifyRefreshToken(dto.refreshToken);
 
-            return this.issueTokenPair({
+            return this.tokenRepository.generateTokenPair({
                 userId: payload.userId,
                 login: payload.login,
                 role: payload.role,

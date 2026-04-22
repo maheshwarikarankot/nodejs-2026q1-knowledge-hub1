@@ -26,7 +26,7 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 400, description: 'Invalid credentials' })
+  @ApiResponse({ status: 403, description: 'Incorrect login or password' })
   async login(@Body() loginDto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
     return this.authService.login(loginDto);
   }
@@ -36,7 +36,8 @@ export class AuthController {
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid refresh token' })
+  @ApiResponse({ status: 401, description: 'No refresh token provided' })
+  @ApiResponse({ status: 403, description: 'Invalid or expired refresh token' })
   async refresh(@Body() refreshDto: RefreshDto): Promise<{ accessToken: string; refreshToken: string }> {
     return this.authService.refresh(refreshDto);
   }

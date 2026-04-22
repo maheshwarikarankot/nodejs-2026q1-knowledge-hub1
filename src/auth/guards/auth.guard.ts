@@ -5,21 +5,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthRequest } from '../types/auth-request.type';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { TokenRepository } from '../token.repository';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly jwtService: JwtService,
+    private readonly tokenRepository: TokenRepository,
   ) {}
-
-  private getAccessSecret(): string {
-    return process.env.JWT_SECRET ?? process.env.JWT_SECRET_KEY ?? '';
-  }
 
   private shouldBypassByPath(path: string): boolean {
     return path === '/' || path.startsWith('/doc') || path === '/doc-json';
@@ -52,16 +47,12 @@ export class AuthGuard implements CanActivate {
 
     const token = this.getBearerToken(req.headers.authorization);
 
-    let payload: JwtPayload;
     try {
-      payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.getAccessSecret(),
-      });
+      req.user = await this.tokenRepository.verifyAccessToken(token);
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }
 
-    req.user = payload;
     return true;
   }
 }

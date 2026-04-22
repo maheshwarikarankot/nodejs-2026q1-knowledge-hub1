@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { PaginatedResponse } from '../common/pagination/pagination.interface';
+import { CommentEntity } from './entities/comment.entity';
 import { CommentRepository } from './comment.repository';
-import { Comment } from './entities/comment.interface';
 
 @Injectable()
 export class CommentService {
@@ -16,15 +16,15 @@ export class CommentService {
             sortBy?: string;
             order? : 'asc' | 'desc';
         }  
-    ): Promise<PaginatedResponse<Comment>> {
+    ): Promise<PaginatedResponse<CommentEntity>> {
         return this.commentRepository.findAll(articleId, opts);
     }
 
-    create(dto: CreateCommentDto): Promise<Comment> {
+    create(dto: CreateCommentDto): Promise<CommentEntity> {
         return this.commentRepository.create(dto);
     }
 
-    findOne(id: string): Promise<Comment> {
+    findOne(id: string): Promise<CommentEntity> {
         return this.commentRepository.findOne(id);
     }
 
