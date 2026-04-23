@@ -4,5 +4,8 @@
   "testEnvironment": "node",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "setupFiles": ["<rootDir>/../jest.env.setup.ts"],
+  "setupFilesAfterEnv": ["<rootDir>/setup/afterEnv.ts"],
+  "globalSetup": "<rootDir>/setup/seedAdmin.ts"
 }
