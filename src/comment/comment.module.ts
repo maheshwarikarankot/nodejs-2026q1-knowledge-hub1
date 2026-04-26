@@ -8,6 +8,6 @@ import { CommentRepository } from './comment.repository';
   imports: [PrismaModule],
   controllers: [CommentController],
   providers: [CommentService, CommentRepository],
-  exports: [CommentService],  
+  exports: [CommentService],
 })
 export class CommentModule {}

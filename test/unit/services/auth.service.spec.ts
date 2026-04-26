@@ -64,9 +64,9 @@ describe('AuthService', () => {
   it('login throws ForbiddenException when user does not exist', async () => {
     userRepositoryMock.findByLoginWithPassword.mockResolvedValueOnce(null);
 
-    await expect(service.login({ login: 'egfry', password: 'pwd' })).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.login({ login: 'egfry', password: 'pwd' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('login throws ForbiddenException when password is invalid', async () => {
@@ -79,9 +79,9 @@ describe('AuthService', () => {
 
     vi.mocked(compare).mockResolvedValueOnce(false as never);
 
-    await expect(service.login({ login: 'john', password: 'wrong' })).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.login({ login: 'john', password: 'wrong' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('login returns access and refresh tokens for valid credentials', async () => {
@@ -105,9 +105,11 @@ describe('AuthService', () => {
       refreshToken: 'refresh-token',
     });
 
-    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith(
-      { userId: 'u1', login: 'john', role: UserRole.EDITOR },
-    );
+    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith({
+      userId: 'u1',
+      login: 'john',
+      role: UserRole.EDITOR,
+    });
   });
 
   it('login uses alternate env keys when primary JWT env vars are absent', async () => {
@@ -133,15 +135,20 @@ describe('AuthService', () => {
       refreshToken: 'alt-refresh-token',
     });
 
-    const result = await service.login({ login: 'john-alt', password: 'correct' });
+    const result = await service.login({
+      login: 'john-alt',
+      password: 'correct',
+    });
 
     expect(result).toEqual({
       accessToken: 'alt-access-token',
       refreshToken: 'alt-refresh-token',
     });
-    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith(
-      { userId: 'u-alt', login: 'john-alt', role: UserRole.ADMIN },
-    );
+    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith({
+      userId: 'u-alt',
+      login: 'john-alt',
+      role: UserRole.ADMIN,
+    });
   });
 
   it('login falls back to hardcoded defaults when all JWT env vars are missing', async () => {
@@ -169,21 +176,27 @@ describe('AuthService', () => {
 
     await service.login({ login: 'john-default', password: 'correct' });
 
-    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith(
-      { userId: 'u-default', login: 'john-default', role: UserRole.VIEWER },
-    );
+    expect(tokenRepositoryMock.generateTokenPair).toHaveBeenCalledWith({
+      userId: 'u-default',
+      login: 'john-default',
+      role: UserRole.VIEWER,
+    });
   });
 
   it('refresh throws UnauthorizedException when refreshToken is missing', async () => {
-    await expect(service.refresh({})).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.refresh({})).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('refresh throws ForbiddenException for invalid/expired token', async () => {
-    tokenRepositoryMock.verifyRefreshToken.mockRejectedValueOnce(new Error('expired'));
-
-    await expect(service.refresh({ refreshToken: 'bad-token' })).rejects.toBeInstanceOf(
-      ForbiddenException,
+    tokenRepositoryMock.verifyRefreshToken.mockRejectedValueOnce(
+      new Error('expired'),
     );
+
+    await expect(
+      service.refresh({ refreshToken: 'bad-token' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('refresh verifies token and rotates token pair', async () => {
@@ -200,7 +213,9 @@ describe('AuthService', () => {
 
     const result = await service.refresh({ refreshToken: 'valid-refresh' });
 
-    expect(tokenRepositoryMock.verifyRefreshToken).toHaveBeenCalledWith('valid-refresh');
+    expect(tokenRepositoryMock.verifyRefreshToken).toHaveBeenCalledWith(
+      'valid-refresh',
+    );
     expect(result).toEqual({
       accessToken: 'new-access',
       refreshToken: 'new-refresh',

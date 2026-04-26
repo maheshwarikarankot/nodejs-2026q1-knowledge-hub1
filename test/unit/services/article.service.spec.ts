@@ -142,7 +142,9 @@ describe('ArticleService', () => {
     const notFoundError = new Error('Article with id missing not found');
     articleRepositoryMock.remove.mockRejectedValueOnce(notFoundError);
 
-    await expect(service.remove('missing')).rejects.toThrow('Article with id missing not found');
+    await expect(service.remove('missing')).rejects.toThrow(
+      'Article with id missing not found',
+    );
   });
 
   it('nullifyAuthor delegates to repository', async () => {

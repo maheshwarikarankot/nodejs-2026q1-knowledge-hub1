@@ -34,7 +34,13 @@ describe('UserService', () => {
 
   it('findAll delegates to repository', async () => {
     const users = [
-      { id: 'u1', login: 'john', role: UserRole.VIEWER, createdAt: 1, updatedAt: 2 },
+      {
+        id: 'u1',
+        login: 'john',
+        role: UserRole.VIEWER,
+        createdAt: 1,
+        updatedAt: 2,
+      },
     ];
     userRepositoryMock.findAll.mockResolvedValueOnce(users);
 
@@ -45,7 +51,13 @@ describe('UserService', () => {
   });
 
   it('findOne delegates to repository', async () => {
-    const user = { id: 'u1', login: 'john', role: UserRole.EDITOR, createdAt: 1, updatedAt: 2 };
+    const user = {
+      id: 'u1',
+      login: 'john',
+      role: UserRole.EDITOR,
+      createdAt: 1,
+      updatedAt: 2,
+    };
     userRepositoryMock.findOne.mockResolvedValueOnce(user);
 
     const result = await service.findOne('u1');
@@ -56,7 +68,13 @@ describe('UserService', () => {
 
   it('create delegates to repository', async () => {
     const dto = { login: 'peter', password: 'Secret123', role: UserRole.ADMIN };
-    const created = { id: 'u2', login: dto.login, role: dto.role, createdAt: 3, updatedAt: 3 };
+    const created = {
+      id: 'u2',
+      login: dto.login,
+      role: dto.role,
+      createdAt: 3,
+      updatedAt: 3,
+    };
     userRepositoryMock.create.mockResolvedValueOnce(created);
 
     const result = await service.create(dto);
@@ -77,12 +95,20 @@ describe('UserService', () => {
     const result = await service.findByLoginWithPassword('john');
 
     expect(result).toEqual(found);
-    expect(userRepositoryMock.findByLoginWithPassword).toHaveBeenCalledWith('john');
+    expect(userRepositoryMock.findByLoginWithPassword).toHaveBeenCalledWith(
+      'john',
+    );
   });
 
   it('updatePassword maps dto fields and delegates to repository', async () => {
     const dto = { oldPassword: 'oldPass', newPassword: 'newPass' };
-    const updated = { id: 'u1', login: 'john', role: UserRole.VIEWER, createdAt: 1, updatedAt: 4 };
+    const updated = {
+      id: 'u1',
+      login: 'john',
+      role: UserRole.VIEWER,
+      createdAt: 1,
+      updatedAt: 4,
+    };
     userRepositoryMock.updateUser.mockResolvedValueOnce(updated);
 
     const result = await service.updatePassword('u1', dto);
@@ -106,7 +132,9 @@ describe('UserService', () => {
     const notFoundError = new Error('User with id missing not found');
     userRepositoryMock.remove.mockRejectedValueOnce(notFoundError);
 
-    await expect(service.remove('missing')).rejects.toThrow('User with id missing not found');
+    await expect(service.remove('missing')).rejects.toThrow(
+      'User with id missing not found',
+    );
   });
 
   it('nullifyAuthor is a no-op and does not touch repository', () => {

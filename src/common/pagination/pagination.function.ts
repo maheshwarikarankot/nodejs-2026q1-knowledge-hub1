@@ -1,15 +1,14 @@
-import { PaginatedResponse } from "./pagination.interface";
-
+import { PaginatedResponse } from './pagination.interface';
 
 export function paginate<T>(
-  items   : T[],
-  page    : number = 1,
-  limit   : number = 10,
+  items: T[],
+  page: number = 1,
+  limit: number = 10,
 ): PaginatedResponse<T> {
-  const total  = items.length;
-  const start  = (page - 1) * limit;
-  const end   = start + limit;
-  const data   = items.slice(start, end);
+  const total = items.length;
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  const data = items.slice(start, end);
   return { data, total, page, limit };
 }
 
@@ -33,8 +32,8 @@ export function sortItems<T>(
       return valueB.localeCompare(valueA);
     }
 
-    if (order === 'asc'){
-        return valueA - valueB;
+    if (order === 'asc') {
+      return valueA - valueB;
     }
     return valueB - valueA;
   });

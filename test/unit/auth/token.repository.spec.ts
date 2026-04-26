@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { TokenRepository } from '../../../src/auth/token.repository';
+import { PrismaService } from '../../../src/prisma/prisma.service';
 import { UserRole } from '../../../src/common/enums';
 
 describe('TokenRepository', () => {
@@ -10,6 +11,19 @@ describe('TokenRepository', () => {
   const jwtServiceMock = {
     signAsync: vi.fn(),
     verifyAsync: vi.fn(),
+  };
+
+  // Minimal Prisma mock — TokenRepository persists refresh tokens to DB,
+  // but these unit tests only exercise sign/verify paths, so an empty
+  // refreshToken delegate is enough to satisfy DI.
+  const prismaServiceMock = {
+    refreshToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   };
 
   const payload = {
@@ -33,6 +47,10 @@ describe('TokenRepository', () => {
           provide: JwtService,
           useValue: jwtServiceMock,
         },
+        {
+          provide: PrismaService,
+          useValue: prismaServiceMock,
+        },
       ],
     }).compile();
 
@@ -40,11 +58,16 @@ describe('TokenRepository', () => {
   });
 
   it('generates access and refresh tokens with primary env vars', async () => {
-    jwtServiceMock.signAsync.mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
+    jwtServiceMock.signAsync
+      .mockResolvedValueOnce('access-token')
+      .mockResolvedValueOnce('refresh-token');
 
     const result = await repository.generateTokenPair(payload);
 
-    expect(result).toEqual({ accessToken: 'access-token', refreshToken: 'refresh-token' });
+    expect(result).toEqual({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
     expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(1, payload, {
       secret: 'access-secret',
       expiresIn: '15m',
@@ -65,7 +88,9 @@ describe('TokenRepository', () => {
     process.env.TOKEN_EXPIRE_TIME = '30m';
     process.env.TOKEN_REFRESH_EXPIRE_TIME = '10d';
 
-    jwtServiceMock.signAsync.mockResolvedValueOnce('alt-access').mockResolvedValueOnce('alt-refresh');
+    jwtServiceMock.signAsync
+      .mockResolvedValueOnce('alt-access')
+      .mockResolvedValueOnce('alt-refresh');
 
     await repository.generateTokenPair(payload);
 
@@ -91,6 +116,16 @@ describe('TokenRepository', () => {
   });
 
   it('verifies refresh token with refresh secret', async () => {
+    // verifyRefreshToken first looks up the token row in Prisma to check
+    // for revocation/expiry, then verifies the JWT signature.
+    prismaServiceMock.refreshToken.findUnique.mockResolvedValueOnce({
+      id: 'rt1',
+      token: 'refresh-token',
+      userId: 'u1',
+      isRevoked: false,
+      expiresAt: new Date(Date.now() + 60_000), // 1 minute in the future
+      createdAt: new Date(),
+    });
     jwtServiceMock.verifyAsync.mockResolvedValueOnce(payload);
 
     const result = await repository.verifyRefreshToken('refresh-token');

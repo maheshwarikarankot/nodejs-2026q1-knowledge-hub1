@@ -11,23 +11,23 @@ export class CategoryService {
     private readonly articleService: ArticleService,
     private readonly categoryRepository: CategoryRepository,
   ) {}
- 
+
   findAll(): Promise<CategoryEntity[]> {
     return this.categoryRepository.findAll();
   }
- 
+
   findOne(id: string): Promise<CategoryEntity> {
     return this.categoryRepository.findOne(id);
   }
- 
+
   create(dto: CreateCategoryDto): Promise<CategoryEntity> {
     return this.categoryRepository.create(dto);
   }
- 
+
   update(id: string, dto: UpdateCategoryDto): Promise<CategoryEntity> {
     return this.categoryRepository.update(id, dto);
   }
- 
+
   async remove(id: string): Promise<void> {
     await this.articleService.nullifyCategory(id);
     await this.categoryRepository.remove(id);

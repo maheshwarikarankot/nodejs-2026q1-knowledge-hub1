@@ -9,9 +9,10 @@ import { AuthGuard } from './guards/auth.guard';
 import { RbacGuard } from './guards/rbac.guard';
 import { ArticleModule } from '../article/article.module';
 import { CommentModule } from '../comment/comment.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [UserModule, ArticleModule, CommentModule, JwtModule.register({})],
+  imports: [UserModule, ArticleModule, CommentModule, PrismaModule, JwtModule.register({})],
   controllers: [AuthController],
   providers: [
     AuthService,

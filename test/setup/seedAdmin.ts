@@ -21,7 +21,10 @@ const isConnectionRefused = (error: unknown): boolean => {
   }
 
   const message = String((error as { message?: string }).message ?? '');
-  return message.includes('ECONNREFUSED') || message.includes("Can't reach database server");
+  return (
+    message.includes('ECONNREFUSED') ||
+    message.includes("Can't reach database server")
+  );
 };
 
 const waitForDatabase = async (prisma: PrismaClient): Promise<void> => {
@@ -34,11 +37,14 @@ const waitForDatabase = async (prisma: PrismaClient): Promise<void> => {
       return;
     } catch (error) {
       if (!isConnectionRefused(error) || attempt === retries) {
-        const base = 'Jest globalSetup could not connect to Postgres for admin seeding.';
-        const details = String((error as { code?: string; message?: string }).code ?? 'UNKNOWN');
+        const base =
+          'Jest globalSetup could not connect to Postgres for admin seeding.';
+        const details = String(
+          (error as { code?: string; message?: string }).code ?? 'UNKNOWN',
+        );
         throw new Error(
           `${base} Last error code: ${details}. ` +
-          'Make sure Podman is running and the DB container is up (e.g. `podman machine start` and `podman-compose up -d db`).',
+            'Make sure Podman is running and the DB container is up (e.g. `podman machine start` and `podman-compose up -d db`).',
         );
       }
 
@@ -54,7 +60,7 @@ export default async function globalSetup(): Promise<void> {
   }
 
   const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString })
+    adapter: new PrismaPg({ connectionString }),
   });
   const hashedPassword = await bcrypt.hash(SEED_ADMIN_PASSWORD, 10);
 
