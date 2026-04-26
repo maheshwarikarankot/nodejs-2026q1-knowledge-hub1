@@ -1,9 +1,5 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { UnauthorizedError } from '../../common/errors/custom-errors';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthRequest } from '../types/auth-request.type';
@@ -22,12 +18,14 @@ export class AuthGuard implements CanActivate {
 
   private getBearerToken(authHeader?: string): string {
     if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing');
+      throw new UnauthorizedError('Authorization header is missing');
     }
 
     const [scheme, token] = authHeader.split(' ');
     if (scheme !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Authorization header must use Bearer scheme');
+      throw new UnauthorizedError(
+        'Authorization header must use Bearer scheme',
+      );
     }
 
     return token;
@@ -50,7 +48,7 @@ export class AuthGuard implements CanActivate {
     try {
       req.user = await this.tokenRepository.verifyAccessToken(token);
     } catch {
-      throw new UnauthorizedException('Invalid or expired access token');
+      throw new UnauthorizedError('Invalid or expired access token');
     }
 
     return true;

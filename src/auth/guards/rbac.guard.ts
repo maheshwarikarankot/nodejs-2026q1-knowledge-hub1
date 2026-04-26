@@ -24,7 +24,11 @@ export class RbacGuard implements CanActivate {
     return path === '/' || path.startsWith('/doc') || path === '/doc-json';
   }
 
-  private ensureCanManageUsers(req: AuthRequest, role: UserRole, userId: string): void {
+  private ensureCanManageUsers(
+    req: AuthRequest,
+    role: UserRole,
+    userId: string,
+  ): void {
     if (!req.path.startsWith('/user')) {
       return;
     }
@@ -74,7 +78,10 @@ export class RbacGuard implements CanActivate {
     }
   }
 
-  private async ensureEditorAccess(req: AuthRequest, userId: string): Promise<void> {
+  private async ensureEditorAccess(
+    req: AuthRequest,
+    userId: string,
+  ): Promise<void> {
     const path = req.path;
 
     if (path.startsWith('/category') || path.startsWith('/user')) {
@@ -88,7 +95,9 @@ export class RbacGuard implements CanActivate {
       if (req.method === 'POST') {
         const body = (req.body ?? {}) as { authorId?: string | null };
         if (body.authorId && body.authorId !== userId) {
-          throw new ForbiddenException('Editors can only create their own articles');
+          throw new ForbiddenException(
+            'Editors can only create their own articles',
+          );
         }
         body.authorId = userId;
         return;
@@ -106,7 +115,9 @@ export class RbacGuard implements CanActivate {
         }
 
         if (authorId !== userId) {
-          throw new ForbiddenException('Editors can only modify their own articles');
+          throw new ForbiddenException(
+            'Editors can only modify their own articles',
+          );
         }
       }
 
@@ -117,7 +128,9 @@ export class RbacGuard implements CanActivate {
       if (req.method === 'POST') {
         const body = (req.body ?? {}) as { authorId?: string | null };
         if (body.authorId && body.authorId !== userId) {
-          throw new ForbiddenException('Editors can only create their own comments');
+          throw new ForbiddenException(
+            'Editors can only create their own comments',
+          );
         }
         body.authorId = userId;
         return;
@@ -135,15 +148,21 @@ export class RbacGuard implements CanActivate {
         }
 
         if (authorId !== userId) {
-          throw new ForbiddenException('Editors can only modify their own comments');
+          throw new ForbiddenException(
+            'Editors can only modify their own comments',
+          );
         }
       }
     }
   }
 
-  private async enforceRbac(req: AuthRequest, payload: JwtPayload): Promise<void> {
+  private async enforceRbac(
+    req: AuthRequest,
+    payload: JwtPayload,
+  ): Promise<void> {
     const role = payload.role;
-    const authSuiteBypassLogin = process.env.AUTH_TEST_BYPASS_LOGIN ?? 'TEST_AUTH_LOGIN';
+    const authSuiteBypassLogin =
+      process.env.AUTH_TEST_BYPASS_LOGIN ?? 'TEST_AUTH_LOGIN';
 
     if (payload.login === authSuiteBypassLogin) {
       return;
