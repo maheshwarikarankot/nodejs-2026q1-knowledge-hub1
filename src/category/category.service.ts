@@ -1,62 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { randomUUID } from 'crypto';
 import { ArticleService } from '../article/article.service';
-import { Category } from './entities/category.entity';
+import { CategoryEntity } from './entities/category.entity';
+import { CategoryRepository } from './category.repository';
 
 @Injectable()
 export class CategoryService {
-    private readonly categories: Category[] = [];
+  constructor(
+    private readonly articleService: ArticleService,
+    private readonly categoryRepository: CategoryRepository,
+  ) {}
 
-  constructor(private readonly articleService: ArticleService) {}
- 
-  findAll(): Category[] {
-    return this.categories;
+  findAll(): Promise<CategoryEntity[]> {
+    return this.categoryRepository.findAll();
   }
- 
-  findOne(id: string): Category {
-    const category = this.categories.find(c => c.id === id);
-    if (!category){
-        throw new NotFoundException(`Category with id ${id} not found`);
-    }
-    return category;
+
+  findOne(id: string): Promise<CategoryEntity> {
+    return this.categoryRepository.findOne(id);
   }
- 
-  create(dto: CreateCategoryDto): Category {
-    const newCategory: Category = {
-      id         : randomUUID(),
-      name       : dto.name,
-      description: dto.description,
-    };
-    this.categories.push(newCategory);
-    return newCategory;
+
+  create(dto: CreateCategoryDto): Promise<CategoryEntity> {
+    return this.categoryRepository.create(dto);
   }
- 
-  update(id: string, dto: UpdateCategoryDto): Category {
-    const category = this.categories.find(c => c.id === id);
 
-    if (!category){
-        throw new NotFoundException(`Category with id ${id} not found`);
-    }
-    if (dto.name !== undefined){
-        category.name = dto.name;
-    }
-    if (dto.description !== undefined) {
-        category.description = dto.description;
-    }
-    return category;
+  update(id: string, dto: UpdateCategoryDto): Promise<CategoryEntity> {
+    return this.categoryRepository.update(id, dto);
   }
- 
-  remove(id: string): void {
-    const idx = this.categories.findIndex(c => c.id === id);
 
-    if (idx === -1){
-        throw new NotFoundException(`Category with id ${id} not found`);
-    }
-
-    this.articleService.nullifyCategory(id);
-
-    this.categories.splice(idx, 1);
+  async remove(id: string): Promise<void> {
+    await this.articleService.nullifyCategory(id);
+    await this.categoryRepository.remove(id);
   }
 }

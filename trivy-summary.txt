@@ -1,0 +1,7 @@
+63 vulnerabilities found in 19 packages
+
+CRITICAL    0
+HIGH        33
+MEDIUM      13
+LOW         13
+UNSPECIFIED 4

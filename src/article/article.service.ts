@@ -1,119 +1,56 @@
-import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
-import { randomUUID } from 'crypto';
 import { ArticleStatus } from '../common/enums';
 import { PaginatedResponse } from '../common/pagination/pagination.interface';
-import { paginate, sortItems } from '../common/pagination/pagination.function';
-import { CommentService } from '../comment/comment.service';
-import { Article } from './entities/article.entity';
+import { ArticleEntity } from './entities/article.entity';
+import { ArticleRepository } from './article.repository';
 
 @Injectable()
 export class ArticleService {
-    private readonly articles: Article[] = [];
+  constructor(private readonly articleRepository: ArticleRepository) {}
 
-    constructor(
-        @Inject(forwardRef(() => CommentService))
-        private readonly commentService: CommentService,
-    ) {}
+  findAll(filters?: {
+    status?: ArticleStatus;
+    categoryId?: string;
+    tag?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+  }): Promise<PaginatedResponse<ArticleEntity>> {
+    return this.articleRepository.findAll(filters);
+  }
 
-    findAll(filters?: { 
-        status?: ArticleStatus;
-        categoryId?: string;
-        tag?: string;
-        page?: number;
-        limit?: number;
-        sortBy?: string;
-        order?: 'asc' | 'desc';
-    }): PaginatedResponse<Article> {
-        let result = [...this.articles];
+  findOne(id: string): Promise<ArticleEntity> {
+    return this.articleRepository.findOne(id);
+  }
 
-        // Apply filters
-        if (filters?.status) {
-            result = result.filter(a => a.status === filters.status);
-        }
-        if (filters?.categoryId) {
-            result = result.filter(a => a.categoryId === filters.categoryId);
-        }
-        if (filters?.tag) {
-            result = result.filter(a => a.tags.includes(filters.tag));
-        }
+  create(dto: CreateArticleDto): Promise<ArticleEntity> {
+    return this.articleRepository.create(dto);
+  }
 
-        // Apply sorting
-        result = sortItems(result, filters?.sortBy, filters?.order);
-        
-        // Apply pagination
-        return paginate(result, filters?.page, filters?.limit);
-    }
+  update(id: string, dto: UpdateArticleDto): Promise<ArticleEntity> {
+    return this.articleRepository.update(id, dto);
+  }
 
-    findOne(id: string) {
-        const article = this.articles.find(a => a.id === id);
-        if (!article) {
-            throw new NotFoundException(`Article with id ${id} not found`);
-        }
-        return article;
-    }
+  async remove(id: string): Promise<void> {
+    await this.articleRepository.remove(id);
+  }
 
-    create(dto: CreateArticleDto) {
-        const now = Date.now();
-        const newArticle : Article = { 
-            id: randomUUID(), 
-            title: dto.title,
-            content: dto.content,
-            status: dto.status ?? ArticleStatus.DRAFT,
-            authorId: dto.authorId ?? null,
-            categoryId: dto.categoryId ?? null, 
-            tags: dto.tags ?? [],
-            createdAt: now, 
-            updatedAt: now 
-        };
-        this.articles.push(newArticle);
-        return newArticle;
-    }
+  async nullifyAuthor(userId: string): Promise<void> {
+    await this.articleRepository.nullifyAuthor(userId);
+  }
 
-    update(id: string, dto: UpdateArticleDto): Article {
-        const article = this.articles.find(a => a.id === id);
-        if (!article) {
-            throw new NotFoundException(`Article with id ${id} not found`);
-        }
-        if(dto.title !== undefined) article.title = dto.title;
-        if(dto.content !== undefined) article.content = dto.content;
-        if(dto.status !== undefined) article.status = dto.status;
-        if(dto.authorId !== undefined) article.authorId = dto.authorId;
-        if(dto.categoryId !== undefined) article.categoryId = dto.categoryId;
-        if(dto.tags !== undefined) article.tags = dto.tags;
-        article.updatedAt = Date.now();
-        return article;
-    }
+  async nullifyCategory(categoryId: string): Promise<void> {
+    await this.articleRepository.nullifyCategory(categoryId);
+  }
 
-    remove(id: string): void{
-    const index = this.articles.findIndex(a => a.id === id);
-        if (index === -1) {
-            throw new NotFoundException(`Article with id ${id} not found`);
-        }
+  articleExists(id: string): Promise<boolean> {
+    return this.articleRepository.articleExists(id);
+  }
 
-        this.commentService.removeByArticle(id);
-        this.articles.splice(index, 1);
-    }
-    
-    nullifyAuthor(userId: string): void {
-        this.articles.forEach(a => { 
-            if (a.authorId === userId){
-            a.authorId = null; 
-            }
-        });
-    }
- 
-    nullifyCategory(categoryId: string): void {
-        this.articles.forEach(a => { 
-         if (a.categoryId === categoryId){
-            a.categoryId = null; 
-            }
-        });
-    }
- 
-    articleExists(id: string): boolean {
-        const article = this.articles.find((existingArticle) => existingArticle.id === id);
-        return article !== undefined;
-    }
+  findAuthorId(id: string): Promise<string | null | undefined> {
+    return this.articleRepository.findAuthorId(id);
+  }
 }
