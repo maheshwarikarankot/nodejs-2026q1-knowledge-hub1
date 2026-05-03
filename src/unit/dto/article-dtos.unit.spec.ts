@@ -112,8 +112,12 @@ describe('Article DTOs Validation', () => {
     });
 
     it('should pass validation for all valid ArticleStatus enum values', async () => {
-      const validStatuses = [ArticleStatus.DRAFT, ArticleStatus.PUBLISHED, ArticleStatus.ARCHIVED];
-      
+      const validStatuses = [
+        ArticleStatus.DRAFT,
+        ArticleStatus.PUBLISHED,
+        ArticleStatus.ARCHIVED,
+      ];
+
       for (const status of validStatuses) {
         const dto = new CreateArticleDto();
         dto.title = 'Test Article';
@@ -157,8 +161,8 @@ describe('Article DTOs Validation', () => {
 
         const errors = await validate(dto);
         expect(errors.length).toBeGreaterThan(0);
-        
-        const authorError = errors.find(e => e.property === 'authorId');
+
+        const authorError = errors.find((e) => e.property === 'authorId');
         expect(authorError).toBeDefined();
         expect(authorError!.constraints).toHaveProperty('isUuid');
       }
@@ -236,10 +240,10 @@ describe('Article DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2);
-      
-      const titleError = errors.find(e => e.property === 'title');
-      const contentError = errors.find(e => e.property === 'content');
-      
+
+      const titleError = errors.find((e) => e.property === 'title');
+      const contentError = errors.find((e) => e.property === 'content');
+
       expect(titleError).toBeDefined();
       expect(titleError!.constraints).toHaveProperty('isNotEmpty');
       expect(contentError).toBeDefined();
@@ -257,11 +261,14 @@ describe('Article DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(6);
-      
-      const fieldErrors = errors.reduce((acc, error) => {
-        acc[error.property] = error.constraints;
-        return acc;
-      }, {} as Record<string, any>);
+
+      const fieldErrors = errors.reduce(
+        (acc, error) => {
+          acc[error.property] = error.constraints;
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
 
       expect(fieldErrors['title']).toHaveProperty('isNotEmpty');
       expect(fieldErrors['content']).toHaveProperty('isNotEmpty');

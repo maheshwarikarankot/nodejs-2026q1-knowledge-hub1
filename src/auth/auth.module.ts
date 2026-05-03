@@ -12,7 +12,13 @@ import { CommentModule } from '../comment/comment.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [UserModule, ArticleModule, CommentModule, PrismaModule, JwtModule.register({})],
+  imports: [
+    UserModule,
+    ArticleModule,
+    CommentModule,
+    PrismaModule,
+    JwtModule.register({}),
+  ],
   controllers: [AuthController],
   providers: [
     AuthService,

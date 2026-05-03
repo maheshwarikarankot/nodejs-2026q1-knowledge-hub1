@@ -128,7 +128,7 @@ describe('User DTOs Validation', () => {
 
     it('should pass validation for all valid UserRole enum values', async () => {
       const validRoles = [UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER];
-      
+
       for (const role of validRoles) {
         const dto = new CreateUserDto();
         dto.login = 'test_user';
@@ -146,10 +146,10 @@ describe('User DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2);
-      
-      const loginError = errors.find(e => e.property === 'login');
-      const passwordError = errors.find(e => e.property === 'password');
-      
+
+      const loginError = errors.find((e) => e.property === 'login');
+      const passwordError = errors.find((e) => e.property === 'password');
+
       expect(loginError).toBeDefined();
       expect(loginError!.constraints).toHaveProperty('isNotEmpty');
       expect(passwordError).toBeDefined();
@@ -164,11 +164,11 @@ describe('User DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(3);
-      
-      const loginError = errors.find(e => e.property === 'login');
-      const passwordError = errors.find(e => e.property === 'password');
-      const roleError = errors.find(e => e.property === 'role');
-      
+
+      const loginError = errors.find((e) => e.property === 'login');
+      const passwordError = errors.find((e) => e.property === 'password');
+      const roleError = errors.find((e) => e.property === 'role');
+
       expect(loginError).toBeDefined();
       expect(loginError!.constraints).toHaveProperty('isNotEmpty');
       expect(passwordError).toBeDefined();
@@ -181,7 +181,7 @@ describe('User DTOs Validation', () => {
       // Test common duplicate login patterns
       const duplicateLogins = [
         'admin',
-        'administrator', 
+        'administrator',
         'root',
         'user',
         'test',

@@ -36,19 +36,13 @@ describe('ParseUuidPipe', () => {
     });
 
     it('should throw BadRequestException for non-string input', () => {
-      const invalidInputs = [
-        null,
-        undefined,
-        123,
-        {},
-        [],
-        true,
-        false,
-      ];
+      const invalidInputs = [null, undefined, 123, {}, [], true, false];
 
       for (const input of invalidInputs) {
         expect(() => pipe.transform(input as any)).toThrow(BadRequestException);
-        expect(() => pipe.transform(input as any)).toThrow('ID must be a string');
+        expect(() => pipe.transform(input as any)).toThrow(
+          'ID must be a string',
+        );
       }
     });
 
@@ -135,7 +129,7 @@ describe('ParseUuidPipe', () => {
 
     it('should handle nil UUID (all zeros)', () => {
       const nilUuid = '00000000-0000-0000-0000-000000000000';
-      
+
       // Nil UUID is not a valid v4 UUID
       expect(() => pipe.transform(nilUuid)).toThrow(BadRequestException);
       expect(() => pipe.transform(nilUuid)).toThrow('Invalid UUID format');
@@ -146,7 +140,7 @@ describe('ParseUuidPipe', () => {
       // where y is one of 8, 9, A, or B
       const strictlyValidV4Uuids = [
         '550e8400-e29b-41d4-8716-446655440000',
-        '550e8400-e29b-41d4-9716-446655440000', 
+        '550e8400-e29b-41d4-9716-446655440000',
         '550e8400-e29b-41d4-a716-446655440000',
         '550e8400-e29b-41d4-b716-446655440000',
       ];

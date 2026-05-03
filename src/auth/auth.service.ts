@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ForbiddenError, UnauthorizedError } from '../common/errors/custom-errors';
+import {
+  ForbiddenError,
+  UnauthorizedError,
+} from '../common/errors/custom-errors';
 import { AuthEntity } from './entities/auth.entity';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';

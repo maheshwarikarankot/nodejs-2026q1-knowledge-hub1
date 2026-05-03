@@ -6,11 +6,11 @@ import { LoggerService } from './common/logger/logger.service';
 
 async function bootstrap() {
   const logger = new LoggerService();
-  
+
   const app = await NestFactory.create(AppModule, {
     logger,
   });
-  
+
   // ── Global Validation Pipe ──
   // Validates all request bodies using DTO class-validator decorators
   app.useGlobalPipes(
@@ -31,10 +31,10 @@ async function bootstrap() {
   SwaggerModule.setup('doc', app, document);
 
   const PORT = process.env.PORT ?? 4000;
-  
+
   // Set up graceful shutdown handlers
   setupProcessErrorHandlers(app, logger);
-  
+
   await app.listen(PORT);
   logger.log(`Application is running on: http://localhost:${PORT}`);
 }
@@ -46,19 +46,26 @@ function setupProcessErrorHandlers(app: any, logger: LoggerService) {
       type: 'uncaughtException',
       name: error.name,
     });
-    
+
     await gracefulShutdown(app, logger, 'uncaughtException', error);
   });
 
   // Handle unhandled promise rejections
-  process.on('unhandledRejection', async (reason: any, promise: Promise<any>) => {
-    logger.error(`Unhandled Rejection at Promise: ${promise}`, reason?.stack, {
-      type: 'unhandledRejection',
-      reason: reason?.toString(),
-    });
-    
-    await gracefulShutdown(app, logger, 'unhandledRejection', reason);
-  });
+  process.on(
+    'unhandledRejection',
+    async (reason: any, promise: Promise<any>) => {
+      logger.error(
+        `Unhandled Rejection at Promise: ${promise}`,
+        reason?.stack,
+        {
+          type: 'unhandledRejection',
+          reason: reason?.toString(),
+        },
+      );
+
+      await gracefulShutdown(app, logger, 'unhandledRejection', reason);
+    },
+  );
 
   // Handle graceful shutdown signals
   process.on('SIGTERM', async () => {
@@ -72,9 +79,14 @@ function setupProcessErrorHandlers(app: any, logger: LoggerService) {
   });
 }
 
-async function gracefulShutdown(app: any, logger: LoggerService, signal: string, error?: any) {
+async function gracefulShutdown(
+  app: any,
+  logger: LoggerService,
+  signal: string,
+  error?: any,
+) {
   logger.log(`Starting graceful shutdown due to: ${signal}`);
-  
+
   try {
     // Close the HTTP server
     if (app && typeof app.close === 'function') {
@@ -82,7 +94,7 @@ async function gracefulShutdown(app: any, logger: LoggerService, signal: string,
       await app.close();
       logger.log('HTTP server closed successfully');
     }
-    
+
     // Close database connections
     logger.log('Closing database connections...');
     try {
@@ -94,16 +106,22 @@ async function gracefulShutdown(app: any, logger: LoggerService, signal: string,
         logger.log('Database connections closed automatically');
       }
     } catch (dbError) {
-      logger.error('Error closing database connections:', dbError?.toString() || 'Unknown error');
+      logger.error(
+        'Error closing database connections:',
+        dbError?.toString() || 'Unknown error',
+      );
       logger.log('Database connections closed');
     }
-    
+
     logger.log('Graceful shutdown completed successfully');
-    
+
     // Exit with appropriate code
     process.exit(error ? 1 : 0);
   } catch (shutdownError) {
-    logger.error(`Error during graceful shutdown: ${shutdownError}`, (shutdownError as Error)?.stack);
+    logger.error(
+      `Error during graceful shutdown: ${shutdownError}`,
+      (shutdownError as Error)?.stack,
+    );
     process.exit(1);
   }
 }

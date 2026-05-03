@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AiModule } from './AI-Integration/ai.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     CommentModule,
     PrismaModule,
     AuthModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

@@ -15,7 +15,7 @@ export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const req = context.switchToHttp().getRequest();
     const res = context.switchToHttp().getResponse();
-    
+
     const method = req.method;
     const url = req.url;
     const query = req.query;
@@ -36,17 +36,29 @@ export class LoggingInterceptor implements NestInterceptor {
         next: () => {
           const responseTime = Date.now() - startTime;
           const statusCode = res.statusCode;
-          
+
           // Log outgoing response
-          this.logger.logResponse(method, url, statusCode, responseTime, requestId);
+          this.logger.logResponse(
+            method,
+            url,
+            statusCode,
+            responseTime,
+            requestId,
+          );
         },
         error: (error) => {
           const responseTime = Date.now() - startTime;
           const statusCode = res.statusCode || 500;
-          
+
           // Log error response
-          this.logger.logResponse(method, url, statusCode, responseTime, requestId);
-          
+          this.logger.logResponse(
+            method,
+            url,
+            statusCode,
+            responseTime,
+            requestId,
+          );
+
           // Log the error details
           this.logger.logError(error, {
             method,

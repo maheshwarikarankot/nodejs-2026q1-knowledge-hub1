@@ -22,7 +22,9 @@ describe('PasswordStripInterceptor', () => {
       providers: [PasswordStripInterceptor],
     }).compile();
 
-    interceptor = module.get<PasswordStripInterceptor>(PasswordStripInterceptor);
+    interceptor = module.get<PasswordStripInterceptor>(
+      PasswordStripInterceptor,
+    );
   });
 
   describe('intercept', () => {
@@ -183,12 +185,7 @@ describe('PasswordStripInterceptor', () => {
     });
 
     it('should handle empty objects and arrays', async () => {
-      const emptyData = [
-        {},
-        [],
-        { users: [] },
-        { metadata: {} },
-      ];
+      const emptyData = [{}, [], { users: [] }, { metadata: {} }];
 
       for (const data of emptyData) {
         const context = createMockExecutionContext();

@@ -91,10 +91,10 @@ describe('Auth DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2);
-      
-      const loginError = errors.find(e => e.property === 'login');
-      const passwordError = errors.find(e => e.property === 'password');
-      
+
+      const loginError = errors.find((e) => e.property === 'login');
+      const passwordError = errors.find((e) => e.property === 'password');
+
       expect(loginError).toBeDefined();
       expect(loginError!.constraints).toHaveProperty('isNotEmpty');
       expect(passwordError).toBeDefined();
@@ -105,7 +105,7 @@ describe('Auth DTOs Validation', () => {
       // Test cases that should fail validation
       const failureCases = [
         { login: '', password: 'validPass123' }, // empty login
-        { login: 'valid_user', password: '' }, // empty password  
+        { login: 'valid_user', password: '' }, // empty password
         { login: '', password: '' }, // both empty
       ];
 
@@ -215,10 +215,10 @@ describe('Auth DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2);
-      
-      const loginError = errors.find(e => e.property === 'login');
-      const passwordError = errors.find(e => e.property === 'password');
-      
+
+      const loginError = errors.find((e) => e.property === 'login');
+      const passwordError = errors.find((e) => e.property === 'password');
+
       expect(loginError).toBeDefined();
       expect(loginError!.constraints).toHaveProperty('isNotEmpty');
       expect(passwordError).toBeDefined();

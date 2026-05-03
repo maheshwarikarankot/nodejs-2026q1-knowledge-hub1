@@ -90,7 +90,11 @@ describe('RbacGuard', () => {
     it('should return true for test bypass login', async () => {
       const req = {
         path: '/protected',
-        user: { userId: 'user-123', login: 'TEST_AUTH_LOGIN', role: UserRole.VIEWER },
+        user: {
+          userId: 'user-123',
+          login: 'TEST_AUTH_LOGIN',
+          role: UserRole.VIEWER,
+        },
       };
       const context = createMockExecutionContext(req);
 
@@ -121,7 +125,11 @@ describe('RbacGuard', () => {
         const req = {
           path: '/user/123',
           method: 'GET',
-          user: { userId: 'viewer-123', login: 'viewer', role: UserRole.VIEWER },
+          user: {
+            userId: 'viewer-123',
+            login: 'viewer',
+            role: UserRole.VIEWER,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -136,14 +144,22 @@ describe('RbacGuard', () => {
         const req = {
           path: '/user',
           method: 'POST',
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-        await expect(guard.canActivate(context)).rejects.toThrow('Forbidden resource');
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          'Forbidden resource',
+        );
       });
 
       it('should allow admins to POST users', async () => {
@@ -166,7 +182,11 @@ describe('RbacGuard', () => {
           path: '/user/editor-123',
           method: 'DELETE',
           params: { id: 'editor-123' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -182,14 +202,22 @@ describe('RbacGuard', () => {
           path: '/user/other-user',
           method: 'DELETE',
           params: { id: 'other-user' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-        await expect(guard.canActivate(context)).rejects.toThrow('Forbidden resource');
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          'Forbidden resource',
+        );
       });
 
       it('should prevent non-admins from changing user roles', async () => {
@@ -198,14 +226,22 @@ describe('RbacGuard', () => {
           method: 'PUT',
           params: { id: 'editor-123' },
           body: { role: UserRole.ADMIN },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-        await expect(guard.canActivate(context)).rejects.toThrow('Only admins can change user roles');
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          'Only admins can change user roles',
+        );
       });
 
       it('should allow users to update their own profile without role change', async () => {
@@ -214,7 +250,11 @@ describe('RbacGuard', () => {
           method: 'PUT',
           params: { id: 'editor-123' },
           body: { oldPassword: 'old', newPassword: 'new' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -231,21 +271,33 @@ describe('RbacGuard', () => {
         const req = {
           path: '/article',
           method: 'POST',
-          user: { userId: 'viewer-123', login: 'viewer', role: UserRole.VIEWER },
+          user: {
+            userId: 'viewer-123',
+            login: 'viewer',
+            role: UserRole.VIEWER,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-        await expect(guard.canActivate(context)).rejects.toThrow('Forbidden resource');
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          'Forbidden resource',
+        );
       });
 
       it('should allow GET requests for viewers', async () => {
         const req = {
           path: '/article',
           method: 'GET',
-          user: { userId: 'viewer-123', login: 'viewer', role: UserRole.VIEWER },
+          user: {
+            userId: 'viewer-123',
+            login: 'viewer',
+            role: UserRole.VIEWER,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -263,7 +315,11 @@ describe('RbacGuard', () => {
           path: '/article',
           method: 'POST',
           body: { authorId: 'editor-123', title: 'Test' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -280,13 +336,19 @@ describe('RbacGuard', () => {
           path: '/article',
           method: 'POST',
           body: { authorId: 'other-user', title: 'Test' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
         await expect(guard.canActivate(context)).rejects.toThrow(
           'Editors can only create their own articles',
         );
@@ -297,7 +359,11 @@ describe('RbacGuard', () => {
           path: '/article/article-123',
           method: 'PUT',
           params: { id: 'article-123' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -314,14 +380,20 @@ describe('RbacGuard', () => {
           path: '/article/article-123',
           method: 'PUT',
           params: { id: 'article-123' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
         mockArticleService.findAuthorId.mockResolvedValue('other-user');
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
         await expect(guard.canActivate(context)).rejects.toThrow(
           'Editors can only modify their own articles',
         );
@@ -332,7 +404,11 @@ describe('RbacGuard', () => {
           path: '/article/non-existent',
           method: 'DELETE',
           params: { id: 'non-existent' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -351,7 +427,11 @@ describe('RbacGuard', () => {
           path: '/comment',
           method: 'POST',
           body: { authorId: 'editor-123', content: 'Test comment' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -368,13 +448,19 @@ describe('RbacGuard', () => {
           path: '/comment',
           method: 'POST',
           body: { authorId: 'other-user', content: 'Test comment' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
         await expect(guard.canActivate(context)).rejects.toThrow(
           'Editors can only create their own comments',
         );
@@ -385,7 +471,11 @@ describe('RbacGuard', () => {
           path: '/comment/comment-123',
           method: 'DELETE',
           params: { id: 'comment-123' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -402,14 +492,20 @@ describe('RbacGuard', () => {
           path: '/comment/comment-123',
           method: 'DELETE',
           params: { id: 'comment-123' },
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
         mockCommentService.findAuthorId.mockResolvedValue('other-user');
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
         await expect(guard.canActivate(context)).rejects.toThrow(
           'Editors can only modify their own comments',
         );
@@ -421,7 +517,11 @@ describe('RbacGuard', () => {
         const req = {
           path: '/category',
           method: 'GET',
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
@@ -436,14 +536,22 @@ describe('RbacGuard', () => {
         const req = {
           path: '/category',
           method: 'POST',
-          user: { userId: 'editor-123', login: 'editor', role: UserRole.EDITOR },
+          user: {
+            userId: 'editor-123',
+            login: 'editor',
+            role: UserRole.EDITOR,
+          },
         };
         const context = createMockExecutionContext(req);
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-        await expect(guard.canActivate(context)).rejects.toThrow('Forbidden resource');
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          'Forbidden resource',
+        );
       });
     });
 
@@ -458,8 +566,12 @@ describe('RbacGuard', () => {
 
         mockReflector.getAllAndOverride.mockReturnValue(false);
 
-        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
-        await expect(guard.canActivate(context)).rejects.toThrow('Unknown role');
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          'Unknown role',
+        );
       });
     });
   });

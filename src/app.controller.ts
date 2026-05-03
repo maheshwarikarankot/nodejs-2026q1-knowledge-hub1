@@ -1,7 +1,12 @@
 import { Controller, Get, BadRequestException } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Public } from './auth/decorators/public.decorator';
-import { NotFoundError, ValidationError, UnauthorizedError, ForbiddenError } from './common/errors/custom-errors';
+import {
+  NotFoundError,
+  ValidationError,
+  UnauthorizedError,
+  ForbiddenError,
+} from './common/errors/custom-errors';
 
 @Controller()
 export class AppController {
@@ -65,7 +70,9 @@ export class AppController {
   testUnhandledRejection(): void {
     // Simulate an unhandled promise rejection
     setTimeout(() => {
-      Promise.reject(new Error('This is an unhandled promise rejection for testing'));
+      Promise.reject(
+        new Error('This is an unhandled promise rejection for testing'),
+      );
     }, 100);
   }
 }

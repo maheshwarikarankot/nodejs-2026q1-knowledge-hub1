@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { NotFoundError, ValidationError, ForbiddenError } from '../common/errors/custom-errors';
+import {
+  NotFoundError,
+  ValidationError,
+  ForbiddenError,
+} from '../common/errors/custom-errors';
 import { User } from './entities/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserRole } from '../common/enums';

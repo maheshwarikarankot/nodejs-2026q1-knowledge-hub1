@@ -22,10 +22,11 @@ export class LoggerService extends ConsoleLogger {
 
   constructor() {
     super('App');
-    
+
     this.isDevelopment = process.env.NODE_ENV !== 'production';
     this.logLevel = this.parseLogLevel(process.env.LOG_LEVEL || 'log');
-    this.maxFileSize = parseInt(process.env.LOG_MAX_FILE_SIZE || '1024', 10) * 1024; // Convert KB to bytes
+    this.maxFileSize =
+      parseInt(process.env.LOG_MAX_FILE_SIZE || '1024', 10) * 1024; // Convert KB to bytes
     this.logDir = path.join(process.cwd(), 'logs');
     this.logFilePath = path.join(this.logDir, 'app.log');
 
@@ -33,8 +34,16 @@ export class LoggerService extends ConsoleLogger {
   }
 
   private parseLogLevel(level: string): LogLevel {
-    const validLevels: LogLevel[] = ['log', 'debug', 'warn', 'error', 'verbose'];
-    return validLevels.includes(level as LogLevel) ? (level as LogLevel) : 'log';
+    const validLevels: LogLevel[] = [
+      'log',
+      'debug',
+      'warn',
+      'error',
+      'verbose',
+    ];
+    return validLevels.includes(level as LogLevel)
+      ? (level as LogLevel)
+      : 'log';
   }
 
   private ensureLogDirectory(): void {
@@ -47,7 +56,7 @@ export class LoggerService extends ConsoleLogger {
     const levels: LogLevel[] = ['error', 'warn', 'log', 'verbose', 'debug'];
     const targetIndex = levels.indexOf(this.logLevel);
     const currentIndex = levels.indexOf(level);
-    
+
     return currentIndex <= targetIndex;
   }
 
@@ -55,46 +64,56 @@ export class LoggerService extends ConsoleLogger {
     if (fs.existsSync(this.logFilePath)) {
       const stats = fs.statSync(this.logFilePath);
       if (stats.size >= this.maxFileSize) {
-        const timestamp = new Date().toISOString()
+        const timestamp = new Date()
+          .toISOString()
           .replace(/[:.]/g, '-')
           .slice(0, -5); // Remove milliseconds and Z
-        
-        const rotatedFilePath = path.join(
-          this.logDir, 
-          `app-${timestamp}.log`
-        );
-        
+
+        const rotatedFilePath = path.join(this.logDir, `app-${timestamp}.log`);
+
         fs.renameSync(this.logFilePath, rotatedFilePath);
       }
     }
   }
 
-  private writeToFile(level: LogLevel, message: string, context?: LogContext): void {
+  private writeToFile(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+  ): void {
     this.rotateLogFile();
 
-    const logEntry = this.isDevelopment 
+    const logEntry = this.isDevelopment
       ? this.formatHumanReadable(level, message, context)
       : this.formatStructured(level, message, context);
 
     fs.appendFileSync(this.logFilePath, logEntry + '\n', 'utf8');
   }
 
-  private formatHumanReadable(level: LogLevel, message: string, context?: LogContext): string {
+  private formatHumanReadable(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+  ): string {
     const timestamp = new Date().toISOString();
     const levelUpper = level.toUpperCase().padEnd(7);
     const contextStr = context ? ` [${JSON.stringify(context)}]` : '';
-    
+
     return `${timestamp} ${levelUpper} ${message}${contextStr}`;
   }
 
-  private formatStructured(level: LogLevel, message: string, context?: LogContext): string {
+  private formatStructured(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+  ): string {
     const logObject = {
       timestamp: new Date().toISOString(),
       level: level.toLowerCase(),
       message,
       ...context,
     };
-    
+
     return JSON.stringify(logObject);
   }
 
@@ -103,11 +122,18 @@ export class LoggerService extends ConsoleLogger {
       return data;
     }
 
-    const sensitiveFields = ['password', 'token', 'authorization', 'auth', 'secret', 'key'];
+    const sensitiveFields = [
+      'password',
+      'token',
+      'authorization',
+      'auth',
+      'secret',
+      'key',
+    ];
     const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
     for (const key in sanitized) {
-      if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
+      if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
         sanitized[key] = '[REDACTED]';
       } else if (typeof sanitized[key] === 'object') {
         sanitized[key] = this.sanitizeData(sanitized[key]);
@@ -117,7 +143,14 @@ export class LoggerService extends ConsoleLogger {
     return sanitized;
   }
 
-  logRequest(method: string, url: string, body?: any, query?: any, headers?: any, requestId?: string): void {
+  logRequest(
+    method: string,
+    url: string,
+    body?: any,
+    query?: any,
+    headers?: any,
+    requestId?: string,
+  ): void {
     if (!this.shouldLog('log')) return;
 
     const sanitizedBody = this.sanitizeData(body);
@@ -133,15 +166,21 @@ export class LoggerService extends ConsoleLogger {
     };
 
     const message = `Incoming request: ${method} ${url}`;
-    
+
     this.writeToFile('log', message, context);
-    
+
     if (this.isDevelopment) {
       super.log(message, this.formatHumanReadable('log', '', context));
     }
   }
 
-  logResponse(method: string, url: string, statusCode: number, responseTime: number, requestId?: string): void {
+  logResponse(
+    method: string,
+    url: string,
+    statusCode: number,
+    responseTime: number,
+    requestId?: string,
+  ): void {
     if (!this.shouldLog('log')) return;
 
     const context: LogContext = {
@@ -153,9 +192,9 @@ export class LoggerService extends ConsoleLogger {
     };
 
     const message = `Outgoing response: ${method} ${url} - ${statusCode} (${responseTime}ms)`;
-    
+
     this.writeToFile('log', message, context);
-    
+
     if (this.isDevelopment) {
       super.log(message, this.formatHumanReadable('log', '', context));
     }
@@ -163,27 +202,36 @@ export class LoggerService extends ConsoleLogger {
 
   override log(message: string, context?: string | LogContext): void {
     if (!this.shouldLog('log')) return;
-    
+
     const logContext = typeof context === 'string' ? { context } : context;
     this.writeToFile('log', message, logContext);
     super.log(message, typeof context === 'string' ? context : undefined);
   }
 
-  override error(message: string, trace?: string, context?: string | LogContext): void {
+  override error(
+    message: string,
+    trace?: string,
+    context?: string | LogContext,
+  ): void {
     if (!this.shouldLog('error')) return;
-    
-    const logContext = typeof context === 'string' ? { context } : (context || {});
+
+    const logContext =
+      typeof context === 'string' ? { context } : context || {};
     if (trace) {
       logContext.trace = trace;
     }
-    
+
     this.writeToFile('error', message, logContext);
-    super.error(message, trace, typeof context === 'string' ? context : undefined);
+    super.error(
+      message,
+      trace,
+      typeof context === 'string' ? context : undefined,
+    );
   }
 
   override warn(message: string, context?: string | LogContext): void {
     if (!this.shouldLog('warn')) return;
-    
+
     const logContext = typeof context === 'string' ? { context } : context;
     this.writeToFile('warn', message, logContext);
     super.warn(message, typeof context === 'string' ? context : undefined);
@@ -191,7 +239,7 @@ export class LoggerService extends ConsoleLogger {
 
   override debug(message: string, context?: string | LogContext): void {
     if (!this.shouldLog('debug')) return;
-    
+
     const logContext = typeof context === 'string' ? { context } : context;
     this.writeToFile('debug', message, logContext);
     super.debug(message, typeof context === 'string' ? context : undefined);
@@ -199,7 +247,7 @@ export class LoggerService extends ConsoleLogger {
 
   override verbose(message: string, context?: string | LogContext): void {
     if (!this.shouldLog('verbose')) return;
-    
+
     const logContext = typeof context === 'string' ? { context } : context;
     this.writeToFile('verbose', message, logContext);
     super.verbose(message, typeof context === 'string' ? context : undefined);
@@ -211,7 +259,7 @@ export class LoggerService extends ConsoleLogger {
       name: error.name,
       stack: error.stack,
     };
-    
+
     this.error(error.message, error.stack, logContext);
   }
 }

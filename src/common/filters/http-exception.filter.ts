@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { LoggerService } from '../logger/logger.service';
-import { NotFoundError, ValidationError, UnauthorizedError, ForbiddenError } from '../errors/custom-errors';
+import {
+  NotFoundError,
+  ValidationError,
+  UnauthorizedError,
+  ForbiddenError,
+} from '../errors/custom-errors';
 
 export interface ErrorResponse {
   statusCode: number;
@@ -26,10 +31,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    
+
     let status: number;
     let message: string | object;
-    
+
     // Handle custom error classes
     if (this.isCustomError(exception)) {
       status = exception.statusCode;
@@ -70,14 +75,26 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     this.logger.logError(exception, logContext);
 
+    if (
+      status === HttpStatus.TOO_MANY_REQUESTS &&
+      exception instanceof HttpException
+    ) {
+      const body = exception.getResponse() as any;
+      if (body?.retryAfter) {
+        response.setHeader('Retry-After', String(body.retryAfter));
+      }
+    }
+
     response.status(status).json(errorResponse);
   }
 
   private isCustomError(exception: any): boolean {
-    return exception instanceof NotFoundError ||
-           exception instanceof ValidationError ||
-           exception instanceof UnauthorizedError ||
-           exception instanceof ForbiddenError;
+    return (
+      exception instanceof NotFoundError ||
+      exception instanceof ValidationError ||
+      exception instanceof UnauthorizedError ||
+      exception instanceof ForbiddenError
+    );
   }
 
   private getErrorMessage(exceptionResponse: any): string | object {
@@ -106,8 +123,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return 'Conflict';
       case HttpStatus.UNPROCESSABLE_ENTITY:
         return 'Unprocessable Entity';
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return 'Too Many Requests';
       case HttpStatus.INTERNAL_SERVER_ERROR:
         return 'Internal Server Error';
+      case HttpStatus.SERVICE_UNAVAILABLE:
+        return 'Service Unavailable';
       default:
         return 'Unknown Error';
     }

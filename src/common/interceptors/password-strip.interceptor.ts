@@ -26,7 +26,7 @@ export class PasswordStripInterceptor implements NestInterceptor {
     // Handle objects
     if (typeof data === 'object') {
       const result = { ...data };
-      
+
       // Remove password field if it exists
       if (result.hasOwnProperty('password')) {
         delete result.password;

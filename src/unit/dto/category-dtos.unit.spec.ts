@@ -91,10 +91,10 @@ describe('Category DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2);
-      
-      const nameError = errors.find(e => e.property === 'name');
-      const descriptionError = errors.find(e => e.property === 'description');
-      
+
+      const nameError = errors.find((e) => e.property === 'name');
+      const descriptionError = errors.find((e) => e.property === 'description');
+
       expect(nameError).toBeDefined();
       expect(nameError!.constraints).toHaveProperty('isString');
       expect(descriptionError).toBeDefined();
@@ -108,10 +108,10 @@ describe('Category DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2);
-      
-      const nameError = errors.find(e => e.property === 'name');
-      const descriptionError = errors.find(e => e.property === 'description');
-      
+
+      const nameError = errors.find((e) => e.property === 'name');
+      const descriptionError = errors.find((e) => e.property === 'description');
+
       expect(nameError).toBeDefined();
       expect(descriptionError).toBeDefined();
     });
@@ -122,10 +122,10 @@ describe('Category DTOs Validation', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(2); // Both name and description are required
-      
-      const nameError = errors.find(e => e.property === 'name');
-      const descriptionError = errors.find(e => e.property === 'description');
-      
+
+      const nameError = errors.find((e) => e.property === 'name');
+      const descriptionError = errors.find((e) => e.property === 'description');
+
       expect(nameError).toBeDefined();
       expect(nameError!.constraints).toHaveProperty('isNotEmpty');
       expect(descriptionError).toBeDefined();

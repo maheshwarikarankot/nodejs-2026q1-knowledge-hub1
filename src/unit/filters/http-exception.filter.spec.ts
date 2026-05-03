@@ -227,7 +227,10 @@ describe('HttpExceptionFilter', () => {
         message: 'Validation error',
         details: ['Field is required'],
       };
-      const exception = new HttpException(exceptionResponse, HttpStatus.BAD_REQUEST);
+      const exception = new HttpException(
+        exceptionResponse,
+        HttpStatus.BAD_REQUEST,
+      );
       const host = createMockArgumentsHost();
 
       filter.catch(exception, host);
@@ -244,7 +247,10 @@ describe('HttpExceptionFilter', () => {
         error: 'Invalid data',
         details: ['Field is required'],
       };
-      const exception = new HttpException(exceptionResponse, HttpStatus.BAD_REQUEST);
+      const exception = new HttpException(
+        exceptionResponse,
+        HttpStatus.BAD_REQUEST,
+      );
       const host = createMockArgumentsHost();
 
       filter.catch(exception, host);
@@ -269,7 +275,9 @@ describe('HttpExceptionFilter', () => {
 
       expect(timestamp).toBeGreaterThanOrEqual(before);
       expect(timestamp).toBeLessThanOrEqual(after);
-      expect(callArgs.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+      expect(callArgs.timestamp).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+      );
     });
 
     it('should include correct request information', () => {
@@ -342,7 +350,7 @@ describe('HttpExceptionFilter', () => {
       filter.catch(exception, host);
 
       const callArgs = mockResponse.json.mock.calls[0][0] as ErrorResponse;
-      
+
       // Verify all required fields are present
       expect(callArgs).toHaveProperty('statusCode');
       expect(callArgs).toHaveProperty('timestamp');
