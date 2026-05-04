@@ -11,6 +11,11 @@ async function bootstrap() {
     logger,
   });
 
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
   // ── Global Validation Pipe ──
   // Validates all request bodies using DTO class-validator decorators
   app.useGlobalPipes(
@@ -25,6 +30,11 @@ async function bootstrap() {
     .setTitle('Knowledge Hub API')
     .setDescription('REST API for the Knowledge Hub platform')
     .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .addSecurityRequirements('access-token')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
