@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import * as bcrypt from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Role, ArticleStatus } from '@prisma/client';
 
@@ -15,6 +16,8 @@ const prisma = new PrismaClient({
 async function main() {
   console.log('Starting database seed...');
 
+  const saltRounds = parseInt(process.env.CRYPT_SALT ?? '10', 10);
+
   // Clear existing data
   await prisma.comment.deleteMany();
   await prisma.article.deleteMany();
@@ -22,11 +25,11 @@ async function main() {
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create users
+  // Create users with hashed passwords
   const admin = await prisma.user.create({
     data: {
       login: 'admin',
-      password: 'admin123',
+      password: await bcrypt.hash('admin123', saltRounds),
       role: Role.ADMIN,
     },
   });
@@ -34,7 +37,7 @@ async function main() {
   const editor = await prisma.user.create({
     data: {
       login: 'editor',
-      password: 'editor123',
+      password: await bcrypt.hash('editor123', saltRounds),
       role: Role.EDITOR,
     },
   });
@@ -42,7 +45,7 @@ async function main() {
   const viewer = await prisma.user.create({
     data: {
       login: 'viewer',
-      password: 'viewer123',
+      password: await bcrypt.hash('viewer123', saltRounds),
       role: Role.VIEWER,
     },
   });
