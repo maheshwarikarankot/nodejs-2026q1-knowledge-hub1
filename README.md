@@ -390,3 +390,108 @@ Example pull command:
 ```bash
 docker pull mahikarankot/khub1_api:latest
 ```
+
+## AI Integration (Assignment 07)
+
+The API is extended with AI-powered endpoints backed by the **Google Gemini API**.
+
+### Gemini model used
+
+`gemini-2.0-flash` — Gemini's fastest and most cost-efficient model, well-suited for summarisation, translation, and content analysis on free-tier quota.
+
+### How to obtain a Gemini API key
+
+1. Go to [Google AI Studio](https://aistudio.google.com/).
+2. Sign in with your Google account.
+3. Click **Get API key** → **Create API key in new project** (or select an existing project).
+4. Copy the generated key.
+5. Open your local `.env` file and set:
+   ```dotenv
+   GEMINI_API_KEY=<paste-your-key-here>
+   ```
+
+The key is free for personal use under Google's [free-tier limits](https://ai.google.dev/pricing).
+
+### Setup steps after cloning
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure environment variables** — copy the example file and fill in the required values:
+   ```bash
+   cp .env.example .env
+   ```
+   Minimum required variables for AI features:
+   ```dotenv
+   GEMINI_API_KEY=your-gemini-api-key          # obtained from Google AI Studio
+   GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com
+   GEMINI_MODEL=gemini-2.0-flash
+   AI_RATE_LIMIT_RPM=20                         # max AI requests per minute
+   AI_CACHE_TTL_SEC=300                         # cache TTL in seconds
+   ```
+   Database and JWT variables must also be set (see the rest of `.env.example`).
+
+3. **Start the application**
+   ```bash
+   npm start
+   ```
+
+4. **Test AI endpoints** using curl or the Swagger UI at `http://localhost:4000/doc/` (AI group):
+
+   Summarize an article:
+   ```bash
+   curl -s -X POST http://localhost:4000/api/ai/articles/<articleId>/summarize \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <token>" \
+     -d '{"maxLength":"short"}'
+   ```
+
+   Translate an article:
+   ```bash
+   curl -s -X POST http://localhost:4000/api/ai/articles/<articleId>/translate \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <token>" \
+     -d '{"targetLanguage":"Spanish"}'
+   ```
+
+   Analyze an article:
+   ```bash
+   curl -s -X POST http://localhost:4000/api/ai/articles/<articleId>/analyze \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <token>" \
+     -d '{"task":"review"}'
+   ```
+
+   Free-form generation:
+   ```bash
+   curl -s -X POST http://localhost:4000/api/ai/generate \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <token>" \
+     -d '{"prompt":"Explain Node.js event loop in 3 sentences."}'
+   ```
+
+   Check usage statistics:
+   ```bash
+   curl -s http://localhost:4000/api/ai/usage \
+     -H "Authorization: Bearer <token>"
+   ```
+
+### AI endpoints reference
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/ai/articles/:id/summarize` | Summarise article (`maxLength`: short \| medium \| detailed) |
+| POST | `/api/ai/articles/:id/translate` | Translate article (`targetLanguage` required) |
+| POST | `/api/ai/articles/:id/analyze` | Analyse article (`task`: review \| bugs \| optimize \| explain) |
+| POST | `/api/ai/generate` | Free-form content generation (`prompt` required, max 1000 chars) |
+| GET  | `/api/ai/usage` | AI usage statistics (total requests, per-endpoint, token count) |
+
+### Known limitations
+
+- **Free-tier quota**: The Gemini free tier allows ~15 requests per minute and ~1 500 requests per day per API key. Heavy testing may exhaust the daily quota.
+- **Latency**: Cold Gemini API responses typically take 1–5 seconds. Complex articles may take longer.
+- **Regional availability**: The Gemini API may be unavailable or restricted in certain regions. Use a VPN if you receive persistent 403 errors.
+- **JSON parsing**: The analyze and translate endpoints ask Gemini to return structured JSON. Occasionally the model may wrap the response in markdown fences; the service strips these automatically, but heavily malformed responses will return `503`.
+- **Rate limiting**: The app enforces `AI_RATE_LIMIT_RPM` (default 20) requests per minute across all AI endpoints. Exceeding this returns `429 Too Many Requests` with a `Retry-After` header.
