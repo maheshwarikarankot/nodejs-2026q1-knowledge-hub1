@@ -1,5 +1,5 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { LoggerService } from '../common/logger/logger.service';
+import { LoggerService } from '../../common/logger/logger.service';
 
 export interface QdrantPoint {
   id: string;

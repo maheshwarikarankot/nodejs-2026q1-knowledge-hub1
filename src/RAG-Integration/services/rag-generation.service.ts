@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { LoggerService } from '../common/logger/logger.service';
+import { LoggerService } from '../../common/logger/logger.service';
 
 interface GeminiGenerateResponse {
   candidates?: Array<{

@@ -3,9 +3,11 @@ import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { ArticleService } from '../article/article.service';
 import { Article } from '../article/entities/article.interface';
 import { ArticleStatus } from '../common/enums';
-import { QdrantService, QdrantPoint } from './qdrant.service';
-import { EmbeddingService } from './embedding.service';
+import { QdrantService, QdrantPoint } from './services/qdrant.service';
+import { EmbeddingService } from './services/embedding.service';
 import { ChunkerService } from './services/chunker.service';
+import { ConversationService } from './services/conversation.service';
+import { RagGenerationService } from './services/rag-generation.service';
 import { ReindexDto } from './dto/reindex.dto';
 import { ReindexResponseDto } from './dto/reindex-response.dto';
 import { RagSearchDto } from './dto/rag-search.dto';
@@ -16,8 +18,6 @@ import {
 import { RagChatDto } from './dto/rag-chat.dto';
 import { RagChatResponseDto, RagSourceDto } from './dto/rag-chat-response.dto';
 import { ConversationHistoryResponseDto } from './dto/conversation-history-response.dto';
-import { ConversationService } from './services/conversation.service';
-import { RagGenerationService } from './rag-generation.service';
 import { buildChatPrompt } from './prompts/chat.prompt';
 
 // Fixed namespace UUID for deterministic chunk IDs across reindex runs
