@@ -3,7 +3,7 @@ import 'dotenv/config';
 
 const port = process.env.PORT || 4000;
 
-const host = `localhost:${port}`;
+const host = `http://localhost:${port}`;
 const _request = request(host);
 
 export default _request;

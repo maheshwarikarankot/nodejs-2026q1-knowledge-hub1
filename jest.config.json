@@ -2,7 +2,12 @@
   "moduleFileExtensions": ["ts", "js"],
   "rootDir": "test",
   "testEnvironment": "node",
+  "testMatch": ["**/*.e2e.spec.ts"],
+  "testPathIgnorePatterns": ["/rbac/", "/refresh/"],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "setupFiles": ["<rootDir>/../jest.env.setup.ts"],
+  "setupFilesAfterEnv": ["<rootDir>/setup/afterEnv.ts"],
+  "globalSetup": "<rootDir>/setup/seedAdmin.ts"
 }
