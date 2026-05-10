@@ -390,3 +390,227 @@ Example pull command:
 ```bash
 docker pull mahikarankot/khub1_api:latest
 ```
+
+---
+
+## RAG Integration (Assignment 10)
+
+The API is extended with a **Retrieval-Augmented Generation (RAG)** layer that lets users search and chat with content stored in the Knowledge Hub database, powered by **Google Gemini** and **Qdrant** vector database.
+
+---
+
+### 1. How to obtain a Gemini API key
+
+1. Go to [Google AI Studio](https://aistudio.google.com/)
+2. Sign in with your Google account
+3. Click **Get API key** → **Create API key in new project** (or select an existing project)
+4. Copy the generated key
+5. Open your local `.env` file and set:
+   ```dotenv
+   GEMINI_API_KEY=<paste-your-key-here>
+   ```
+
+The key is free for personal use under Google's [free-tier limits](https://ai.google.dev/pricing).
+
+---
+
+### 2. Gemini models used
+
+| Purpose | Model | Notes |
+|---------|-------|-------|
+| **Text generation** (RAG answers, chat) | `gemini-2.0-flash` | Controlled via `GEMINI_MODEL` env var |
+| **Text embeddings** (indexing + search) | `text-embedding-004` | Produces 768-dimensional vectors; controlled via `GEMINI_EMBEDDING_MODEL` env var |
+
+Both are available on the Gemini free tier.
+
+---
+
+### 3. Vector database — Qdrant
+
+**[Qdrant](https://qdrant.tech/)** is an open-source, high-performance vector search engine. It runs as a dedicated container in the same Docker Compose environment as the app and PostgreSQL.
+
+#### Running with Docker Compose
+
+```bash
+# Start all services (app + PostgreSQL + Qdrant)
+docker-compose up --build
+
+# Or with the dev profile (runs migrations + seed first)
+docker-compose --profile dev up --build
+```
+
+The `vectordb` service in `docker-compose.yml`:
+
+```yaml
+vectordb:
+  image: qdrant/qdrant:v1.9.2
+  ports:
+    - "6333:6333"          # REST API (browser UI also available here)
+  volumes:
+    - khub1api_vector-data:/qdrant/storage   # persistent vector data
+  healthcheck:
+    test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+```
+
+The `app` service waits for Qdrant to be healthy before starting (`depends_on: vectordb: condition: service_healthy`).
+
+Qdrant dashboard is available at **http://localhost:6333/dashboard** when running locally.
+
+---
+
+### 4. Full startup flow after cloning
+
+#### Step 1 — Install dependencies
+
+```bash
+npm install
+```
+
+#### Step 2 — Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and set at minimum:
+
+```dotenv
+# Your Gemini API key
+GEMINI_API_KEY=your-gemini-api-key
+
+# PostgreSQL (keep defaults or adjust to your setup)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_DB=khub1db
+
+# RAG — Qdrant runs on localhost when not using Docker Compose
+RAG_VECTOR_DB_URL=http://localhost:6333
+RAG_VECTOR_COLLECTION=knowledge_hub_articles
+RAG_CHUNK_SIZE=800
+RAG_CHUNK_OVERLAP=200
+RAG_CONVERSATION_MAX_MESSAGES=20
+```
+
+> When running via Docker Compose, `RAG_VECTOR_DB_URL` is automatically overridden to `http://vectordb:6333` by the `environment:` block — no manual change needed.
+
+#### Step 3 — Start with Docker Compose (recommended)
+
+```bash
+docker-compose --profile dev up --build
+```
+
+This starts PostgreSQL, Qdrant, and the API (with migrations + seed applied automatically).
+
+#### Alternative — run locally without Docker
+
+```bash
+# Start Qdrant standalone
+docker run -p 6333:6333 qdrant/qdrant:v1.9.2
+
+# Apply DB migrations and seed
+npx prisma migrate deploy
+npx prisma db seed
+
+# Start the API
+npm start
+```
+
+#### Step 4 — Build the vector index
+
+After the app is running, call the index endpoint to embed and store all published articles:
+
+```bash
+# Get a token first
+TOKEN=$(curl -s -X POST http://localhost:4000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin","password":"admin123"}' | jq -r '.accessToken')
+
+# Build the index (published articles only)
+curl -s -X POST http://localhost:4000/ai/rag/index \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"onlyPublished": true}' | jq
+```
+
+Expected response:
+
+```json
+{
+  "indexedArticles": 3,
+  "indexedChunks": 12,
+  "vectorCollection": "knowledge_hub_articles"
+}
+```
+
+#### Step 5 — Sample RAG requests
+
+**Semantic search:**
+
+```bash
+curl -s -X POST http://localhost:4000/ai/rag/search \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Docker containerization best practices", "limit": 3}' | jq
+```
+
+**Chat (single turn):**
+
+```bash
+curl -s -X POST http://localhost:4000/ai/rag/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is Docker and why should I use it?"}' | jq
+```
+
+**Chat (multi-turn — continue the conversation):**
+
+```bash
+# Save the conversationId from the previous response
+CONV_ID="<conversationId from previous response>"
+
+curl -s -X POST http://localhost:4000/ai/rag/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"question\": \"Can you give a concrete example?\", \"conversationId\": \"$CONV_ID\"}" | jq
+```
+
+**Delete an article from the index:**
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" \
+  -X DELETE http://localhost:4000/ai/rag/index/articles/<articleId> \
+  -H "Authorization: Bearer $TOKEN"
+# Returns 204 on success, 404 if not indexed
+```
+
+**View conversation history:**
+
+```bash
+curl -s http://localhost:4000/ai/rag/chat/$CONV_ID/history \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+#### RAG endpoints reference
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/ai/rag/index` | Build or refresh vector index from articles |
+| POST | `/ai/rag/search` | Semantic search with optional status/category/tag filters |
+| POST | `/ai/rag/chat` | Ask a question grounded in Knowledge Hub articles |
+| DELETE | `/ai/rag/index/articles/:id` | Remove article vectors from the index |
+| GET | `/ai/rag/chat/:conversationId/history` | Retrieve conversation message history |
+
+---
+
+### 5. Known limitations
+
+| Limitation | Detail |
+|------------|--------|
+| **Gemini free-tier embedding quota** | `text-embedding-004` allows ~1 500 requests/minute on the free tier. Indexing large article sets may hit rate limits; the service retries up to 3× with exponential backoff |
+| **Gemini free-tier generation quota** | `gemini-2.0-flash` allows ~15 RPM on the free tier. Heavy concurrent chat use will return `503` after retries |
+| **Indexing time** | Each article chunk requires one Gemini embedding API call (sequential). 10 articles × 2 chunks each = ~20 API calls; expect 10–30 seconds for a full reindex |
+| **In-memory conversation store** | Conversations are stored in RAM — they are lost on server restart. Not suitable for production multi-instance deployments |
+| **In-memory RAG does not invalidate on article update** | The vector index is not automatically refreshed when an article is edited. Call `POST /ai/rag/index` or `DELETE /ai/rag/index/articles/:id` manually after changes |
+| **Latency** | Cold Gemini API responses take 1–5 seconds. A chat turn (embed + search + generate) typically takes 3–8 seconds end-to-end |
+| **Regional availability** | The Gemini API may be unavailable or restricted in certain regions. Use a VPN if you receive persistent `403` errors |
+| **Vector collection size** | Qdrant free local instance has no hard limit, but very large collections (100 k+ vectors) may require tuning `HNSW` indexing parameters |
